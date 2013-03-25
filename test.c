@@ -6,9 +6,15 @@
 #include "parser.h"
 #include "vector.h"
 
+// TODO: Move to parser.c when it exists.
+defineVector(parseTreeVector, struct parseTree)
+
+declareVector(stringVector, char*)
+defineVector(stringVector, char*)
+
 // Turns the lisp-like form (a (b c) d) into a vector of strings containing
 // "a", "(b c)", and "d".
-struct vector *vectorizeForm(char *form) {
+struct stringVector *vectorizeForm(char *form) {
     char *formStart = strchr(form, '(');
     char *formEnd = strrchr(form, ')');
 
@@ -34,7 +40,7 @@ struct vector *vectorizeForm(char *form) {
         return c;
     }
 
-    struct vector *items = vector_init(sizeof(char*));
+    struct stringVector *items = stringVector_init();
     char *c = formStart + 1;
     while (c < formEnd) {
 
@@ -50,7 +56,7 @@ struct vector *vectorizeForm(char *form) {
 
         int length = end - start;
         char *item = strndup(start, length);
-        vector_push(items, &item);
+        stringVector_push(items, item);
 
         c = end;
     }
@@ -65,33 +71,27 @@ struct vector *vectorizeForm(char *form) {
 // Generates a parseTree struct from a string of lisp-like forms that
 // represent the structure of the parse tree.
 struct parseTree generateParseTree(char *forms) {
-    struct vector *items = vectorizeForm(forms);
+    struct stringVector *items = vectorizeForm(forms);
 
-    //char *name = *(char**)vector_get(items, 0);
-    char *name = (char*)vector_get(items, 0);
+    char *name = stringVector_get(items, 0);
 
     if (strcmp(name, "identifier") == 0) {
-        char *identifierName = (char*)vector_get(items, 1);
-        struct vector *identifier = vector_init(sizeof(char*));
-        vector_push(identifier, &identifierName);
-        return (struct parseTree){"identifier", identifier};
+        char *identifier = stringVector_get(items, 1);
+        return (struct parseTree){"identifier", NULL, identifier};
     } else if (strcmp(name, "number") == 0) {
-        char *numberString = (char*)vector_get(items, 1);
-        int value = atoi(numberString);
-        struct vector *number = vector_init(sizeof(int));
-        vector_push(number, &value);
-        return (struct parseTree){"number", number};
+        char *number = stringVector_get(items, 1);
+        return (struct parseTree){"number", NULL, number};
     }
 
-    struct vector *children = (struct vector*)vector_init(sizeof(struct parseTree));
+    struct parseTreeVector *children = parseTreeVector_init();
     int i;
     for (i = 1; i < items->length; i++) {
-        char *item = *(char**)vector_get(items, i);
+        char *item = stringVector_get(items, i);
         struct parseTree childTree = generateParseTree(item);
-        vector_push(children, &childTree);
+        parseTreeVector_push(children, childTree);
     }
 
-    return (struct parseTree){name, children};
+    return (struct parseTree){name, children, NULL};
 }
 
 int opcodesEqual(struct vector *opcodes, char *expectedCode) {
@@ -100,21 +100,19 @@ int opcodesEqual(struct vector *opcodes, char *expectedCode) {
 
 // Test the code that was defined in this file to make testing easier.
 void testTest() {
-    struct vector *items = vectorizeForm("(aaa (bbb ccc) ddd)");
-    assert(strcmp(*(char**)vector_get(items, 0), "aaa") == 0);
-    assert(strcmp(*(char**)vector_get(items, 1), "(bbb ccc)") == 0);
-    assert(strcmp(*(char**)vector_get(items, 2), "ddd") == 0);
+    struct stringVector *items = vectorizeForm("(aaa (bbb ccc) ddd)");
+    assert(strcmp(stringVector_get(items, 0), "aaa") == 0);
+    assert(strcmp(stringVector_get(items, 1), "(bbb ccc)") == 0);
+    assert(strcmp(stringVector_get(items, 2), "ddd") == 0);
 
-    struct parseTree tree = pt(aaa (identifier ccc) ddd);
+    struct parseTree tree = pt(aaa (bbb (identifier ccc)) (number 123));
     assert(strcmp(tree.name, "aaa") == 0);
-    struct parseTree child = *(struct parseTree*)vector_get(tree.children, 0);
-    printf("%s\n", child.name);
-    assert(strcmp(child.name, "identifier") == 0);
-    struct parseTree grandchild = *(struct parseTree*)vector_get(child.children, 0);
-    printf("%s\n", grandchild.name);
-    assert(strcmp(grandchild.name, "ccc") == 0);
-    struct parseTree child2 = *(struct parseTree*)vector_get(tree.children, 1);
-    assert(strcmp(child2.name, "ddd") == 0);
+    struct parseTree child = parseTreeVector_get(tree.children, 0);
+    assert(strcmp(child.name, "bbb") == 0);
+    struct parseTree grandchild = parseTreeVector_get(child.children, 0);
+    assert(strcmp(grandchild.name, "identifier") == 0);
+    struct parseTree child2 = parseTreeVector_get(tree.children, 1);
+    assert(strcmp(child2.name, "number") == 0);
 }
 
 void testCodeGenerator() {

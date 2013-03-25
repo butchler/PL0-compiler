@@ -1,15 +1,16 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "vector2.h"
+#include "vector.h"
 
 struct parseTree;
 
-define_vector(parse_tree_vector, struct parseTree)
+declareVector(parseTreeVector, struct parseTree)
 
 struct parseTree {
     char *name;
-    struct parse_tree_vector *children;
+    struct parseTreeVector *children;
+    char *data;
 };
 
 #endif
