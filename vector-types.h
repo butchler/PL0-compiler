@@ -3,9 +3,7 @@
 
 #include "vector.h"
 
-struct parseTree;
 declareVector(parseTreeVector, struct parseTree)
-
 declareVector(stringVector, char*)
 
 #endif
