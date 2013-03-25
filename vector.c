@@ -50,7 +50,6 @@ void vector_set(struct vector *vector, int index, void *item)
 
    int offset = index * vector->itemSize;
    memcpy((char*)(vector->items) + offset, item, vector->itemSize);
-
 }
 
 void vector_resize(struct vector *vector, int newCapacity)

@@ -1,7 +1,9 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
-struct vector *generate(struct parseTree parseTree) {
+#include "parser.h"
+
+struct vector *generate(struct parseTree tree) {
     return NULL;
 }
 

@@ -1,14 +1,15 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "vector.h"
+#include "vector2.h"
+
+struct parseTree;
+
+define_vector(parse_tree_vector, struct parseTree)
 
 struct parseTree {
     char *name;
-    struct vector *children;
-    void *data;   // Used for certain leaf nodes, like identifier to store the
-                  // name of the identifier, and number to store the value of
-                  // the number.
+    struct parse_tree_vector *children;
 };
 
 #endif
