@@ -3,87 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "src/generator.h"
 #include "src/parser.h"
-#include "src/lib/vector.h"
-
-// Turns the lisp-like form (a (b c) d) into a vector of strings containing
-// "a", "(b c)", and "d".
-struct vector *vectorizeForm(char *form) {
-    char *formStart = strchr(form, '(');
-    char *formEnd = strrchr(form, ')');
-
-    char *skipWhitespace(char *start) {
-        int numWhitespace = strspn(start, " \r\n\t");
-        return start + numWhitespace;
-    }
-    char *skipNonWhitespace(char *start) {
-        int numNonWhitespace = strcspn(start, " \r\n\t");
-        return start + numNonWhitespace;
-    }
-    char *skipForm(char *start) {
-        char *c = start + 1;
-        int level = 1;
-        while (level > 0) {
-            if (*c == '(')
-                level += 1;
-            else if (*c == ')')
-                level -= 1;
-            c += 1;
-        }
-
-        return c;
-    }
-
-    struct vector *items = makeVector(char*);
-    char *c = formStart + 1;
-    while (c < formEnd) {
-
-        char *start = skipWhitespace(c);
-
-        char *end = NULL;
-        if (*start == '(')
-            end = skipForm(start);
-        else
-            end = skipNonWhitespace(start);
-        if (end > formEnd)
-            end = formEnd;
-
-        int length = end - start;
-        char *item = strndup(start, length);
-        push(items, item);
-
-        c = end;
-    }
-
-    return items;
-}
-
-// Awesome alias for generateParseTree so that you don't have to type a bunch
-// of quotes or \'s to make a multiline string.
-#define pt(forms) generateParseTree("(" #forms ")")
-
-// Generates a parseTree struct from a string of lisp-like forms that
-// represent the structure of the parse tree.
-struct parseTree generateParseTree(char *forms) {
-    if (forms[0] == '(') {
-        struct vector *items = vectorizeForm(forms);
-
-        char *name = get(char*, items, 0);
-
-        struct vector *children = makeVector(struct parseTree);
-        int i;
-        for (i = 1; i < items->length; i++) {
-            char *item = get(char*, items, i);
-            struct parseTree childTree = generateParseTree(item);
-            push(children, childTree);
-        }
-
-        return (struct parseTree){name, children};
-    } else {
-        return (struct parseTree){forms, NULL};
-    }
-}
+#include "test/lib/vectorize.h"
 
 int instructionsEqual(struct vector *instructions, char *expectedInstructions) {
     int i; int offset = 0;
@@ -112,7 +33,7 @@ int instructionsEqual(struct vector *instructions, char *expectedInstructions) {
 }
 
 // Test the code that was defined in this file to make testing easier.
-void testTest() {
+void testVectorize() {
     void testVectorizeForm() {
         struct vector *items = vectorizeForm("(aaa (bbb ccc) ddd)");
 
@@ -226,7 +147,7 @@ void testCodeGenerator() {
 }
 
 int main() {
-    testTest();
+    testVectorize();
     testCodeGenerator();
 
     printf("All tests passed.\n");
