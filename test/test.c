@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "generator.h"
-#include "parser.h"
-#include "vector.h"
+#include "src/generator.h"
+#include "src/parser.h"
+#include "src/lib/vector.h"
 
 // Turns the lisp-like form (a (b c) d) into a vector of strings containing
 // "a", "(b c)", and "d".

@@ -1,5 +1,5 @@
-#include "generator.h"
-#include "parser.h"
+#include "src/generator.h"
+#include "src/parser.h"
 #include <string.h>
 #include <stdlib.h>
 
