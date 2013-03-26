@@ -9,7 +9,6 @@
 
 defineVector(parseTreeVector, struct parseTree)   // TODO: Move to parser.c when it exists.
 defineVector(stringVector, char*)
-defineVector(instructionVector, struct instruction)
 
 // Turns the lisp-like form (a (b c) d) into a vector of strings containing
 // "a", "(b c)", and "d".
@@ -184,7 +183,7 @@ void testCodeGenerator() {
                                 (statement
                                     (read-statement
                                         (identifier x)))
-                                (statments
+                                (statements
                                     (statement
                                         (if-statement
                                             (condition
@@ -195,29 +194,32 @@ void testCodeGenerator() {
                                                     (number 0)))
                                             (statement
                                                 (write-statement
-                                                    (identifier 1)))))))))));
+                                                    (identifier x)))))))))));
 
         // TODO: Free parse tree.
         
-        struct instructionVector *instructions = generate(tree);
+        struct instructionVector *instructions = generateInstructions(tree);
         // int x;
         // begin
         //     read x
         //     if x = 0 then
         //         write x
         // end
+        if (instructions == NULL)
+            puts(getGeneratorError());
+        assert(instructions != NULL);
         assert(instructionsEqual(instructions,
-                    "inc 0 1"   // Reserve space for int x
-                    "sio 0 2"   // Read onto stack
-                    "sto 0 0"   // Store read value in x
-                    "lod 0 0"   // Load x onto stack
-                    "lit 0 0"   // Push a 0 onto stack
-                    "opr 0 8"   // Check for equality
-                    "jpc 0 9"   // Jump to after if statement if comparison
-                                // was false
-                    "lit 0 1"   // Load a 1 onto stack
-                    "sio 0 1"   // Output the 1
-                    "opr 0 0"   // Return/Exit
+                    " inc 0 1"   // Reserve space for int x
+                    " sio 0 2"   // Read onto stack
+                    " sto 0 0"   // Store read value in x
+                    " lod 0 0"   // Load x onto stack
+                    " lit 0 0"   // Push a 0 onto stack
+                    " opr 0 8"   // Check for equality
+                    " jpc 0 9"   // Jump to after if statement if comparison
+                                 // was false
+                    " lod 0 0"   // Load x onto the stack
+                    " sio 0 1"   // Output the value of x
+                    " opr 0 0"   // Return/Exit
                     ));
 
         instructionVector_free(instructions);
