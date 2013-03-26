@@ -2,17 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "generator.h"
 #include "parser.h"
 #include "vector.h"
-#include "vector-types.h"
-
-defineVector(parseTreeVector, struct parseTree)   // TODO: Move to parser.c when it exists.
-defineVector(stringVector, char*)
 
 // Turns the lisp-like form (a (b c) d) into a vector of strings containing
 // "a", "(b c)", and "d".
-struct stringVector *vectorizeForm(char *form) {
+struct vector *vectorizeForm(char *form) {
     char *formStart = strchr(form, '(');
     char *formEnd = strrchr(form, ')');
 
@@ -38,7 +35,7 @@ struct stringVector *vectorizeForm(char *form) {
         return c;
     }
 
-    struct stringVector *items = stringVector_init();
+    struct vector *items = makeVector(char*);
     char *c = formStart + 1;
     while (c < formEnd) {
 
@@ -54,7 +51,7 @@ struct stringVector *vectorizeForm(char *form) {
 
         int length = end - start;
         char *item = strndup(start, length);
-        stringVector_push(items, item);
+        push(items, item);
 
         c = end;
     }
@@ -69,30 +66,29 @@ struct stringVector *vectorizeForm(char *form) {
 // Generates a parseTree struct from a string of lisp-like forms that
 // represent the structure of the parse tree.
 struct parseTree generateParseTree(char *forms) {
-    struct stringVector *items = vectorizeForm(forms);
+    if (forms[0] == '(') {
+        struct vector *items = vectorizeForm(forms);
 
-    char *name = stringVector_get(items, 0);
+        char *name = get(char*, items, 0);
 
-    struct parseTreeVector *children = parseTreeVector_init();
-    struct stringVector *data = stringVector_init();
-    int i;
-    for (i = 1; i < items->length; i++) {
-        char *item = stringVector_get(items, i);
-        if (item[0] == '(') {
+        struct vector *children = makeVector(struct parseTree);
+        int i;
+        for (i = 1; i < items->length; i++) {
+            char *item = get(char*, items, i);
             struct parseTree childTree = generateParseTree(item);
-            parseTreeVector_push(children, childTree);
-        } else {
-            stringVector_push(data, item);
+            push(children, childTree);
         }
-    }
 
-    return (struct parseTree){name, children, data};
+        return (struct parseTree){name, children};
+    } else {
+        return (struct parseTree){forms, NULL};
+    }
 }
 
-int instructionsEqual(struct instructionVector *instructions, char *expectedInstructions) {
+int instructionsEqual(struct vector *instructions, char *expectedInstructions) {
     int i; int offset = 0;
     for (i = 0; i < instructions->length; i++) {
-        struct instruction currentInstruction = instructionVector_get(instructions, i);
+        struct instruction currentInstruction = get(struct instruction, instructions, i);
 
         char instruction[3]; int lexicalLevel; int modifier; int bytesRead;
         int numMatched = sscanf(expectedInstructions + offset, "%s %d %d%n", instruction, &lexicalLevel, &modifier, &bytesRead);
@@ -118,42 +114,43 @@ int instructionsEqual(struct instructionVector *instructions, char *expectedInst
 // Test the code that was defined in this file to make testing easier.
 void testTest() {
     void testVectorizeForm() {
-        struct stringVector *items = vectorizeForm("(aaa (bbb ccc) ddd)");
+        struct vector *items = vectorizeForm("(aaa (bbb ccc) ddd)");
 
-        assert(strcmp(stringVector_get(items, 0), "aaa") == 0);
-        assert(strcmp(stringVector_get(items, 1), "(bbb ccc)") == 0);
-        assert(strcmp(stringVector_get(items, 2), "ddd") == 0);
+        assert(strcmp(get(char*, items, 0), "aaa") == 0);
+        assert(strcmp(get(char*, items, 1), "(bbb ccc)") == 0);
+        assert(strcmp(get(char*, items, 2), "ddd") == 0);
 
-        stringVector_free(items);
+        freeVector(items);
     }
 
     void testGenerateParseTree() {
         struct parseTree tree = pt(aaa (bbb (identifier ccc)) (number 123));
         assert(strcmp(tree.name, "aaa") == 0);
-        struct parseTree child = parseTreeVector_get(tree.children, 0);
+        struct parseTree child = get(struct parseTree, tree.children, 0);
         assert(strcmp(child.name, "bbb") == 0);
-        struct parseTree grandchild = parseTreeVector_get(child.children, 0);
+        struct parseTree grandchild = get(struct parseTree, child.children, 0);
         assert(strcmp(grandchild.name, "identifier") == 0);
-        char *identifier = stringVector_get(grandchild.data, 0);
+        char *identifier = get(struct parseTree, grandchild.children, 0).name;
         assert(strcmp(identifier, "ccc") == 0);
-        struct parseTree child2 = parseTreeVector_get(tree.children, 1);
+        struct parseTree child2 = get(struct parseTree, tree.children, 1);
         assert(strcmp(child2.name, "number") == 0);
 
         // TODO: Free parse tree.
     }
 
     void testInstructionsEqual() {
-        struct instructionVector *instructions = instructionVector_init();
-        instructionVector_push(instructions, (struct instruction){1, 0, 0});
-        instructionVector_push(instructions, (struct instruction){2, 0, 0});
-        instructionVector_push(instructions, (struct instruction){3, 0, 0});
+        struct vector *instructions = makeVector(struct instruction);
+        struct instruction instruction;
+        instruction = (struct instruction){1, 0, 0}; push(instructions, instruction);
+        instruction = (struct instruction){2, 0, 0}; push(instructions, instruction);
+        instruction = (struct instruction){3, 0, 0}; push(instructions, instruction);
         assert(instructionsEqual(instructions,
                     " lit 0 0"
                     " opr 0 0"
                     " lod 0 0"));
         assert(!instructionsEqual(instructions, ""));
 
-        instructionVector_free(instructions);
+        freeVector(instructions);
     }
 
     testVectorizeForm();
@@ -198,7 +195,7 @@ void testCodeGenerator() {
 
         // TODO: Free parse tree.
         
-        struct instructionVector *instructions = generateInstructions(tree);
+        struct vector *instructions = generateInstructions(tree);
         // int x;
         // begin
         //     read x
@@ -222,7 +219,7 @@ void testCodeGenerator() {
                     " opr 0 0"   // Return/Exit
                     ));
 
-        instructionVector_free(instructions);
+        freeVector(instructions);
     }
 
     testIfStatement();
