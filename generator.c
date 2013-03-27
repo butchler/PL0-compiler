@@ -42,7 +42,7 @@ struct parseTree getChild(struct parseTree parent, char *childName) {
             return child;
     }
 
-    return (struct parseTree){NULL, NULL, NULL};
+    return (struct parseTree){NULL, NULL};
 }
 struct parseTree getLastChild(struct parseTree parent, char *childName) {
     int i;
@@ -52,7 +52,7 @@ struct parseTree getLastChild(struct parseTree parent, char *childName) {
             return child;
     }
 
-    return (struct parseTree){NULL, NULL, NULL};
+    return (struct parseTree){NULL, NULL};
 }
 
 struct symbol addSymbol(struct generatorState state, char *name) {
@@ -131,7 +131,7 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
                 return NULL;
             }
 
-            char *name = get(char*, identifier.data, 0);
+            char *name = get(struct parseTree, identifier.children, 0).name;
             addSymbol(state, name);
             numVars += 1;
 
@@ -174,11 +174,11 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         return result;
     } else if (strcmp(tree.name, "read-statement") == 0) {
         struct parseTree identifier = getChild(tree, "identifier");
-        if (identifier.name == NULL || identifier.data == NULL || identifier.data->length < 1) {
+        if (identifier.name == NULL || identifier.children == NULL || identifier.children->length < 1) {
             setGeneratorError("Expected identifier inside read-statement.");
             return NULL;
         }
-        char *name = get(char*, identifier.data, 0);
+        char *name = get(struct parseTree, identifier.children, 0).name;
 
         struct vector *result = makeVector(struct instruction);
 
@@ -193,11 +193,11 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         return result;
     } else if (strcmp(tree.name, "write-statement") == 0) {
         struct parseTree identifier = getChild(tree, "identifier");
-        if (identifier.name == NULL || identifier.data == NULL || identifier.data->length < 1) {
+        if (identifier.name == NULL || identifier.children == NULL || identifier.children->length < 1) {
             setGeneratorError("Expected identifier inside write-statement.");
             return NULL;
         }
-        char *name = get(char*, identifier.data, 0);
+        char *name = get(struct parseTree, identifier.children, 0).name;
 
         struct vector *result = makeVector(struct instruction);
 
@@ -264,8 +264,8 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         return result;
     } else if (strcmp(tree.name, "expression") == 0) {
         struct parseTree number = getChild(tree, "number");
-        if (number.name != NULL && number.data != NULL && number.data->length >= 1) {
-            char *numberString = get(char*, number.data, 0);
+        if (number.name != NULL && number.children != NULL && number.children->length >= 1) {
+            char *numberString = get(struct parseTree, number.children, 0).name;
             int value = atoi(numberString);
 
             struct vector *result = makeVector(struct instruction);
@@ -276,8 +276,8 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         }
 
         struct parseTree identifier = getChild(tree, "identifier");
-        if (identifier.name != NULL && identifier.data != NULL && identifier.data->length >= 1) {
-            char *name = get(char*, identifier.data, 0);
+        if (identifier.name != NULL && identifier.children != NULL && identifier.children->length >= 1) {
+            char *name = get(struct parseTree, identifier.children, 0).name;
             struct symbol symbol = getSymbol(state, name);
 
             struct vector *result = makeVector(struct instruction);
@@ -290,12 +290,12 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         setGeneratorError("Expected number or identifier inside expression.");
         return NULL;
     } else if (strcmp(tree.name, "rel-op") == 0) {
-        if (tree.data == NULL || tree.data->length < 1) {
+        if (tree.children == NULL || tree.children->length < 1) {
             setGeneratorError("Expected a relation operator (such as =, <, <=, tec.) after rel-op.");
             return NULL;
         }
 
-        char *operator = get(char*, tree.data, 0);
+        char *operator = get(struct parseTree, tree.children, 0).name;
         struct instruction instruction;
 
         if (strcmp(operator, "=") == 0) {

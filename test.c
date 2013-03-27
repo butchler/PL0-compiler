@@ -66,24 +66,23 @@ struct vector *vectorizeForm(char *form) {
 // Generates a parseTree struct from a string of lisp-like forms that
 // represent the structure of the parse tree.
 struct parseTree generateParseTree(char *forms) {
-    struct vector *items = vectorizeForm(forms);
+    if (forms[0] == '(') {
+        struct vector *items = vectorizeForm(forms);
 
-    char *name = get(char*, items, 0);
+        char *name = get(char*, items, 0);
 
-    struct vector *children = makeVector(struct parseTree);
-    struct vector *data = makeVector(char*);
-    int i;
-    for (i = 1; i < items->length; i++) {
-        char *item = get(char*, items, i);
-        if (item[0] == '(') {
+        struct vector *children = makeVector(struct parseTree);
+        int i;
+        for (i = 1; i < items->length; i++) {
+            char *item = get(char*, items, i);
             struct parseTree childTree = generateParseTree(item);
             push(children, childTree);
-        } else {
-            push(data, item);
         }
-    }
 
-    return (struct parseTree){name, children, data};
+        return (struct parseTree){name, children};
+    } else {
+        return (struct parseTree){forms, NULL};
+    }
 }
 
 int instructionsEqual(struct vector *instructions, char *expectedInstructions) {
@@ -131,7 +130,7 @@ void testTest() {
         assert(strcmp(child.name, "bbb") == 0);
         struct parseTree grandchild = get(struct parseTree, child.children, 0);
         assert(strcmp(grandchild.name, "identifier") == 0);
-        char *identifier = get(char*, grandchild.data, 0);
+        char *identifier = get(struct parseTree, grandchild.children, 0).name;
         assert(strcmp(identifier, "ccc") == 0);
         struct parseTree child2 = get(struct parseTree, tree.children, 1);
         assert(strcmp(child2.name, "number") == 0);
