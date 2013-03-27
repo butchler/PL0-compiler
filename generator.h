@@ -2,7 +2,7 @@
 #define GENERATOR_H
 
 #include "parser.h"
-#include "vector-types.h"
+#include "vector.h"
 
 struct instruction {
     int opcode;
@@ -11,11 +11,9 @@ struct instruction {
     int modifier;
 };
 
-declareVector(instructionVector, struct instruction);
-
 int getOpcode(char *instruction);
 struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier);
-struct instructionVector *generateInstructions(struct parseTree tree);
+struct vector *generateInstructions(struct parseTree tree);
 char *getGeneratorError();
 
 #endif
