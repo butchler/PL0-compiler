@@ -1,8 +1,10 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
-#include "parser.h"
-#include "vector.h"
+// Include parse for the parse tree type
+// which is referenced in this file
+#include "src/parser.h"
+#include "src/lib/vector.h"
 
 struct instruction {
     int opcode;
