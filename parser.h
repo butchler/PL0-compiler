@@ -8,4 +8,7 @@ struct parseTree {
     struct vector *children;
 };
 
+struct parseTree getChild(struct parseTree parent, char *childName);
+struct parseTree getLastChild(struct parseTree parent, char *childName);
+
 #endif
