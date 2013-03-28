@@ -6,6 +6,7 @@
 #include "src/parser.h"
 #include "src/lib/vector.h"
 
+// Represents a VM instruction.
 struct instruction {
     int opcode;
     char *opcodeName;
@@ -13,6 +14,9 @@ struct instruction {
     int modifier;
 };
 
+// A symbol can be a variable name or a procedure name. We need to keep track
+// of its lexical level so we know what code can access it, and we need to keep
+// track of its address so we can load its value.
 struct symbol {
     char *name;
     int level;     // The lexical level of the symbol.
@@ -26,7 +30,11 @@ struct generatorState {
     int currentLevel;     // The current lexical level.
 };
 
+// generateInstructions is just an alias for generate, that initializes the
+// generatorState for you. Use it instead of using generate directly.
 struct vector *generateInstructions(struct parseTree tree);
+
+// Given a parse tree, generate a list of VM instructions.
 struct vector *generate(struct parseTree tree, struct generatorState state);
 struct vector *generate_program(struct parseTree tree, struct generatorState state);
 struct vector *generate_block(struct parseTree tree, struct generatorState state);
@@ -40,12 +48,18 @@ struct vector *generate_ifStatement(struct parseTree tree, struct generatorState
 struct vector *generate_expression(struct parseTree tree, struct generatorState state);
 struct vector *generate_relationalOperator(struct parseTree tree, struct generatorState state);
 
+// Given a string represtation of an instruction, such as "lit" or "sto",
+// return the corresponding integer opcode.
 int getOpcode(char *instruction);
+
+// Utility function to initialize a struct instruction.
 struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier);
 
+// Add and get a symbol from the symbol table.
 struct symbol addSymbol(struct generatorState state, char *name);
 struct symbol getSymbol(struct generatorState state, char *name);
 
+// Get and set an error in case a function returns a failure value.
 void setGeneratorError(char *errorMessage);
 char *getGeneratorError();
 
