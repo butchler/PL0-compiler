@@ -54,7 +54,11 @@ struct vector
 #define push(vector, item) vector_push(vector, (void*)(&item))
 // pushLiteral puts the local variable "literal" in it's own scope so that it
 // can't conflict with any other variables.
-#define pushLiteral(vector, type, value) { type literal = value; push(vector, literal); }
+//#define pushLiteral(vector, type, value) { type literal = value; push(vector, literal); }
+// Need to use variable arguments to pass the value to pushLiteral, because the
+// value could be a struct literal, and have commands in it. For example:
+// pushLiteral(vector, struct something, {"string", NULL}).
+#define pushLiteral(vector, type, ...) { type literal = __VA_ARGS__; push(vector, literal); }
 #define set(vector, index, item) vector_set(vector, index, (void*)(&item))
 #define get(type, vector, index) (*(type*)vector_get(vector, index))
 #define freeVector(vector) vector_free(vector)
