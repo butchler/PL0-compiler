@@ -36,7 +36,7 @@ if(x == y) {
 ```
 
 ### Macros
-Macros are cool. Use them.
+Macros are cool. Use them, but if you don't need to.
 
 ```C
 #define ABS(a) (((a)<0) ? -(a) : (a))
