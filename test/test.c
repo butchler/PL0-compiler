@@ -3,39 +3,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "src/parser.h"
-#include "test/lib/vectorize.h"
+#include "test/lib/parser.h"
+#include "test/lib/generator.h"
 
-int instructionsEqual(struct vector *instructions, char *expectedInstructions) {
-    int i; int offset = 0;
-    for (i = 0; i < instructions->length; i++) {
-        struct instruction currentInstruction = get(struct instruction, instructions, i);
-
-        char instruction[3]; int lexicalLevel; int modifier; int bytesRead;
-        int numMatched = sscanf(expectedInstructions + offset, "%s %d %d%n", instruction, &lexicalLevel, &modifier, &bytesRead);
-        offset += bytesRead;
-
-        if (numMatched < 3)
-            return 0;
-
-        int opcode = getOpcode(instruction);
-
-        if (opcode != currentInstruction.opcode ||
-                lexicalLevel != currentInstruction.lexicalLevel ||
-                modifier != currentInstruction.modifier)
-            return 0;
-    }
-
-    if (offset == strlen(expectedInstructions))
-        return 1;
-
-    return 0;
-}
-
-// Test the code that was defined in this file to make testing easier.
-void testVectorize() {
+void testTestUtil() {
     void testVectorizeForm() {
-        struct vector *items = vectorizeForm("(aaa (bbb ccc) ddd)");
+        struct vector *items = formToVector("(aaa (bbb ccc) ddd)");
 
         assert(strcmp(get(char*, items, 0), "aaa") == 0);
         assert(strcmp(get(char*, items, 1), "(bbb ccc)") == 0);
@@ -147,7 +120,7 @@ void testCodeGenerator() {
 }
 
 int main() {
-    testVectorize();
+    testTestUtil();
     testCodeGenerator();
 
     printf("All tests passed.\n");

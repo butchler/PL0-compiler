@@ -1,13 +1,27 @@
+#include "test/lib/parser.h"
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 
-#include "src/lib/vector.h"
-#include "src/parser.h"
+struct parseTree generateParseTree(char *form) {
+    if (form[0] == '(') {
+        struct vector *items = formToVector(form);
 
-// Turns the lisp-like form (a (b c) d) into a vector of strings containing
-// "a", "(b c)", and "d".
-struct vector *vectorizeForm(char *form) {
+        char *name = get(char*, items, 0);
+
+        struct vector *children = makeVector(struct parseTree);
+        int i;
+        for (i = 1; i < items->length; i++) {
+            char *item = get(char*, items, i);
+            struct parseTree childTree = generateParseTree(item);
+            push(children, childTree);
+        }
+
+        return (struct parseTree){name, children};
+    } else {
+        return (struct parseTree){form, NULL};
+    }
+}
+
+struct vector *formToVector(char *form) {
     char *formStart = strchr(form, '(');
     char *formEnd = strrchr(form, ')');
 
@@ -57,24 +71,3 @@ struct vector *vectorizeForm(char *form) {
     return items;
 }
 
-// Generates a parseTree struct from a string of lisp-like forms that
-// represent the structure of the parse tree.
-struct parseTree generateParseTree(char *forms) {
-    if (forms[0] == '(') {
-        struct vector *items = vectorizeForm(forms);
-
-        char *name = get(char*, items, 0);
-
-        struct vector *children = makeVector(struct parseTree);
-        int i;
-        for (i = 1; i < items->length; i++) {
-            char *item = get(char*, items, i);
-            struct parseTree childTree = generateParseTree(item);
-            push(children, childTree);
-        }
-
-        return (struct parseTree){name, children};
-    } else {
-        return (struct parseTree){forms, NULL};
-    }
-}
