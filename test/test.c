@@ -103,7 +103,7 @@ void testParser() {
         }
     }
 
-    //initLexer();
+    initLexer();
 
     struct vector *lexemes = readLexemes("int x;");
 
@@ -111,25 +111,39 @@ void testParser() {
     addRule(grammar, "integer", "intsym identifier semicolonsym");
     struct parseTree tree = parse(lexemes, 0, "integer", grammar);
     assert(tree.name != NULL);
-    printParseTree(tree, 0);
+    assert(parseTreesEqual(tree, pt(integer (identifier x))));
 
     lexemes = readLexemes(
             "begin\n"
-                "read x\n"
-                "write x\n"
+                "read x;\n"
+                "write x;\n"
             "end\n");
 
     grammar = (struct grammar){makeVector(struct rule)};
     addRule(grammar, "begin-block", "beginsym statements endsym");
-    addRule(grammar, "statements", "statement");
-    addRule(grammar, "statements", "statement statements");
+    // Just like in the lexer the regexes for the longer strings must come
+    // before the shorter ones, with the grammar longer rules must come before
+    // shorter ones so that each variable is "greedy" and matches as much as it
+    // possibly can. So, rule that matches multiple statements must come before
+    // the rule that only matches one.
+    //addRule(grammar, "statements", "statement semicolonsym statements");
+    //addRule(grammar, "statements", "statement semicolonsym");
+    addRule(grammar, "statements", "statement semicolonsym statements");
+    addRule(grammar, "statements", "nothing");
     addRule(grammar, "statement", "read-statement");
     addRule(grammar, "statement", "write-statement");
-    addRule(grammar, "read-statement", "identifier readsym");
-    addRule(grammar, "write-statement", "identifier writesym");
+    addRule(grammar, "read-statement", "readsym identifier");
+    addRule(grammar, "write-statement", "writesym identifier");
     tree = parse(lexemes, 0, "begin-block", grammar);
     assert(tree.name != NULL);
-    printParseTree(tree, 0);
+    assert(parseTreesEqual(tree,
+                pt(begin-block
+                    (statements
+                     (statement (read-statement
+                                 (identifier x)))
+                     (statements
+                      (statement (write-statement
+                                  (identifier x))))))));
 }
 
 void testCodeGenerator() {
