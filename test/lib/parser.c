@@ -1,5 +1,6 @@
 #include "test/lib/parser.h"
 #include <string.h>
+#include <assert.h>
 
 struct parseTree generateParseTree(char *form) {
     if (form[0] == '(') {
@@ -69,5 +70,39 @@ struct vector *formToVector(char *form) {
     }
 
     return items;
+}
+
+int parseTreesEqual(struct parseTree x, struct parseTree y) {
+    assert(x.name != NULL && y.name != NULL);
+
+    // Return false if they don't have the same name.
+    if (strcmp(x.name, y.name) != 0)
+        return 0;
+
+    // Return true if they have the same name and neither have children.
+    if (x.children == NULL && y.children == NULL)
+        return 1;
+
+    // Return false if only one of them has children.
+    if (x.children == NULL || y.children == NULL)
+        return 0;
+
+    // Return false if one has more children than the other.
+    if (x.children->length != y.children->length)
+        return 0;
+
+    int length = x.children->length;
+    int i;
+    for (i = 0; i < length; i++) {
+        struct parseTree xChild = get(struct parseTree, x.children, i);
+        struct parseTree yChild = get(struct parseTree, y.children, i);
+
+        // Return false if one of their children isn't equal.
+        if (!parseTreesEqual(xChild, yChild))
+            return 0;
+    }
+
+    // If all of the children are equal, return true.
+    return 1;
 }
 

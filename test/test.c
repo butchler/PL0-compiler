@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "src/lexer.h"
 #include "test/lib/parser.h"
 #include "test/lib/generator.h"
 
@@ -50,6 +51,99 @@ void testTestUtil() {
     testVectorizeForm();
     testGenerateParseTree();
     testInstructionsEqual();
+}
+
+void testLexer() {
+    initLexer();
+
+    struct vector *lexemes = readLexemes(
+            "int x;\n"
+            "begin\n"
+                "read x\n"
+                "if x = 0 then\n"
+                    "write x\n"
+            "end\n");
+
+    /*int i;
+    for (i = 0; i < lexemes->length; i++) {
+        struct lexeme lexeme = get(struct lexeme, lexemes, i);
+        printf("%s ", lexeme.token);
+    }
+    printf("\n");*/
+}
+
+void testParser() {
+
+    void addRule(struct grammar grammar, char *variable, char *constProductionString) {
+        char *productionString = strdup(constProductionString);
+        struct vector *production = makeVector(char*);
+        while (productionString != NULL) {
+            char *varOrTerminal = strsep(&productionString, " ");
+            push(production, varOrTerminal);
+        }
+        pushLiteral(grammar.rules, struct rule, {variable, production});
+    }
+
+    void printParseTree(struct parseTree tree, int level) {
+        void printIndent() {
+            int i;
+            for (i = 0; i < 4 * level; i++)
+                printf(" ");
+        }
+
+        printIndent();
+        printf("%s\n", tree.name);
+
+        if (tree.children != NULL) {
+            int i;
+            for (i = 0; i < tree.children->length; i++) {
+                struct parseTree child = get(struct parseTree, tree.children, i);
+                printParseTree(child, level + 1);
+            }
+        }
+    }
+
+    initLexer();
+
+    struct vector *lexemes = readLexemes("int x;");
+
+    struct grammar grammar = {makeVector(struct rule)};
+    addRule(grammar, "integer", "intsym identifier semicolonsym");
+    struct parseTree tree = parse(lexemes, 0, "integer", grammar);
+    assert(tree.name != NULL);
+    assert(parseTreesEqual(tree, pt(integer (identifier x))));
+
+    lexemes = readLexemes(
+            "begin\n"
+                "read x;\n"
+                "write x;\n"
+            "end\n");
+
+    grammar = (struct grammar){makeVector(struct rule)};
+    addRule(grammar, "begin-block", "beginsym statements endsym");
+    // Just like in the lexer the regexes for the longer strings must come
+    // before the shorter ones, with the grammar longer rules must come before
+    // shorter ones so that each variable is "greedy" and matches as much as it
+    // possibly can. So, rule that matches multiple statements must come before
+    // the rule that only matches one.
+    //addRule(grammar, "statements", "statement semicolonsym statements");
+    //addRule(grammar, "statements", "statement semicolonsym");
+    addRule(grammar, "statements", "statement semicolonsym statements");
+    addRule(grammar, "statements", "nothing");
+    addRule(grammar, "statement", "read-statement");
+    addRule(grammar, "statement", "write-statement");
+    addRule(grammar, "read-statement", "readsym identifier");
+    addRule(grammar, "write-statement", "writesym identifier");
+    tree = parse(lexemes, 0, "begin-block", grammar);
+    assert(tree.name != NULL);
+    assert(parseTreesEqual(tree,
+                pt(begin-block
+                    (statements
+                     (statement (read-statement
+                                 (identifier x)))
+                     (statements
+                      (statement (write-statement
+                                  (identifier x))))))));
 }
 
 void testCodeGenerator() {
@@ -121,6 +215,8 @@ void testCodeGenerator() {
 
 int main() {
     testTestUtil();
+    testLexer();
+    testParser();
     testCodeGenerator();
 
     printf("All tests passed.\n");

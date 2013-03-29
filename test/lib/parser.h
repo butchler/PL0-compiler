@@ -18,4 +18,7 @@ struct parseTree generateParseTree(char *forms);
 // ["a", "(b c)", "d"].
 struct vector *formToVector(char *form);
 
+// Return true if the two parse trees are equivalent, false otherwise.
+int parseTreesEqual(struct parseTree x, struct parseTree y);
+
 #endif
