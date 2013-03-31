@@ -27,18 +27,15 @@ struct parseTree parseProgram(struct vector *lexemes, struct grammar grammar);
 // Parse the given lexemes, returning a parse tree.
 struct parseTree parse(struct vector *lexemes, int index, char *currentVariable, struct grammar grammar);
 
-// Used for parsing identifiers and numbers, which are kind of like terminals
-// and kind of like variables. Returns a parse tree with the given name and the
-// current token as the only child, if the current token is of the given type.
-struct parseTree parseValue(struct lexeme lexeme, int type, char *name);
-
 // Try to parse a single production rule for the given variable from the grammar.
 struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
         char *currentVariable, struct grammar grammar);
 
 // Returns a parse tree that indicates an error occurred, with the given error
 // message as its name.
-struct parseTree errorTree(char *error);
+struct parseTree errorTree(char *error, struct vector *children);
+// Returns tree if the given tree is a tree that was produced by errorTree().
+int isParseTreeError(struct parseTree tree);
 
 // Converts "semicolonsym", "readsym", etc. into integers that represent the
 // token type.
@@ -48,10 +45,5 @@ int getTokenType(char *token);
 struct parseTree getChild(struct parseTree parent, char *childName);
 // Returns the last child of the given parseTree that has the given name.
 struct parseTree getLastChild(struct parseTree parent, char *childName);
-
-// Wrapper for sprintf that allocates the string for you. Copied from man 3
-// printf. This function should really be in a more general utility function
-// file.
-char *format(const char *fmt, ...);
 
 #endif

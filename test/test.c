@@ -73,45 +73,16 @@ void testLexer() {
 }
 
 void testParser() {
-
-    void addRule(struct grammar grammar, char *variable, char *constProductionString) {
-        char *productionString = strdup(constProductionString);
-        struct vector *production = makeVector(char*);
-        while (productionString != NULL) {
-            char *varOrTerminal = strsep(&productionString, " ");
-            push(production, varOrTerminal);
-        }
-        pushLiteral(grammar.rules, struct rule, {variable, production});
-    }
-
-    void printParseTree(struct parseTree tree, int level) {
-        void printIndent() {
-            int i;
-            for (i = 0; i < 4 * level; i++)
-                printf(" ");
-        }
-
-        printIndent();
-        printf("%s\n", tree.name);
-
-        if (tree.children != NULL) {
-            int i;
-            for (i = 0; i < tree.children->length; i++) {
-                struct parseTree child = get(struct parseTree, tree.children, i);
-                printParseTree(child, level + 1);
-            }
-        }
-    }
-
     initLexer();
 
     struct vector *lexemes = readLexemes("int x;");
 
     struct grammar grammar = {makeVector(struct rule)};
     addRule(grammar, "integer", "intsym identifier semicolonsym");
+    addRule(grammar, "identifier", "identsym");
     struct parseTree tree = parse(lexemes, 0, "integer", grammar);
     assert(tree.name != NULL);
-    assert(parseTreesEqual(tree, pt(integer (identifier x))));
+    assert(parseTreesSimilar(tree, pt(integer (identifier x))));
 
     lexemes = readLexemes(
             "begin\n"
@@ -126,17 +97,16 @@ void testParser() {
     // shorter ones so that each variable is "greedy" and matches as much as it
     // possibly can. So, rule that matches multiple statements must come before
     // the rule that only matches one.
-    //addRule(grammar, "statements", "statement semicolonsym statements");
-    //addRule(grammar, "statements", "statement semicolonsym");
     addRule(grammar, "statements", "statement semicolonsym statements");
     addRule(grammar, "statements", "nothing");
     addRule(grammar, "statement", "read-statement");
     addRule(grammar, "statement", "write-statement");
     addRule(grammar, "read-statement", "readsym identifier");
     addRule(grammar, "write-statement", "writesym identifier");
+    addRule(grammar, "identifier", "identsym");
     tree = parse(lexemes, 0, "begin-block", grammar);
     assert(tree.name != NULL);
-    assert(parseTreesEqual(tree,
+    assert(parseTreesSimilar(tree,
                 pt(begin-block
                     (statements
                      (statement (read-statement
@@ -144,6 +114,94 @@ void testParser() {
                      (statements
                       (statement (write-statement
                                   (identifier x))))))));
+
+    // Full grammar for PL/0 language.
+    grammar = (struct grammar){makeVector(struct rule)};
+    addRule(grammar, "program", "block periodsym");
+
+    addRule(grammar, "block", "const-declaration var-declaration statement");
+
+    addRule(grammar, "const-declaration", "constsym constants semicolonsym");
+    addRule(grammar, "const-declaration", "nothing");
+    addRule(grammar, "constants", "constant commasym constants");
+    addRule(grammar, "constants", "constant");
+    addRule(grammar, "constant", "identifier eqsym number");
+
+    addRule(grammar, "var-declaration", "intsym vars semicolonsym");
+    addRule(grammar, "var-declaration", "nothing");
+    addRule(grammar, "vars", "var commasym vars");
+    addRule(grammar, "vars", "var");
+    addRule(grammar, "var", "identifier");
+
+    addRule(grammar, "statement", "begin-block");
+    addRule(grammar, "statement", "assignment");
+    addRule(grammar, "statement", "if-statement");
+    addRule(grammar, "statement", "while-statement");
+    addRule(grammar, "statement", "read-statement");
+    addRule(grammar, "statement", "write-statement");
+    addRule(grammar, "statement", "nothing");
+
+    addRule(grammar, "assignment", "identifier becomessym expression");
+
+    addRule(grammar, "begin-block", "beginsym statements endsym");
+    addRule(grammar, "statements", "statement semicolonsym statements");
+    addRule(grammar, "statements", "statement");
+
+    addRule(grammar, "if-statement", "ifsym condition thensym statement");
+    addRule(grammar, "condition", "expression rel-op expression");
+    addRule(grammar, "condition", "oddsym expression");
+    addRule(grammar, "rel-op", "eqsym");
+    addRule(grammar, "rel-op", "neqsym");
+    addRule(grammar, "rel-op", "lessym");
+    addRule(grammar, "rel-op", "leqsym");
+    addRule(grammar, "rel-op", "gtrsym");
+    addRule(grammar, "rel-op", "geqsym");
+
+    addRule(grammar, "expression", "sign term add-or-substract term");
+    addRule(grammar, "expression", "sign term");
+    addRule(grammar, "sign", "plussym");
+    addRule(grammar, "sign", "minussym");
+    addRule(grammar, "sign", "nothing");
+    addRule(grammar, "add-or-substract", "plussym");
+    addRule(grammar, "add-or-substract", "minussym");
+    addRule(grammar, "term", "factor multiply-or-divide factor");
+    addRule(grammar, "term", "factor");
+    addRule(grammar, "multiply-or-divide", "multsym");
+    addRule(grammar, "multiply-or-divide", "slashsym");
+    addRule(grammar, "factor", "lparentsym expression rparentsym");
+    addRule(grammar, "factor", "identifier");
+    addRule(grammar, "factor", "number");
+
+    addRule(grammar, "while-statement", "whilesym condition dosym statement");
+
+    addRule(grammar, "read-statement", "readsym identifier");
+    addRule(grammar, "write-statement", "writesym identifier");
+
+    addRule(grammar, "identifier", "identsym");
+    addRule(grammar, "number", "numbersym");
+
+    addRule(grammar, "identifier", "keep-tokens");
+    addRule(grammar, "number", "keep-tokens");
+    addRule(grammar, "add-or-subtract", "keep-tokens");
+    addRule(grammar, "multiply-or-divide", "keep-tokens");
+    addRule(grammar, "rel-op", "keep-tokens");
+
+    lexemes = readLexemes(
+            "const a = 5, b = 10;\n"
+            "int x, y, z;\n"
+            "begin\n"
+                "read x;\n"
+                "read y;\n"
+                "x := x + y*a;\n"
+                "y:=(y+x)*b;\n"
+                "z := x + y;\n"
+                "write z\n"
+            "end.\n");
+    assert(lexemes != NULL);
+    tree = parseProgram(lexemes, grammar);
+    assert(tree.name != NULL);
+    //printParseTree(tree, 0);
+    // TODO: Write giant parse tree to test this program.
 }
 
 void testCodeGenerator() {
@@ -156,7 +214,7 @@ void testCodeGenerator() {
         //     read x
         //     if x = 0 then
         //         write x
-        // end
+        // end.
         struct parseTree tree = pt(program
                 (block
                     (var-declaration

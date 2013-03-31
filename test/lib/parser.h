@@ -20,5 +20,17 @@ struct vector *formToVector(char *form);
 
 // Return true if the two parse trees are equivalent, false otherwise.
 int parseTreesEqual(struct parseTree x, struct parseTree y);
+// This is like parseTreesEqual, except that it doesn't compare leave nodes,
+// which represent tokens in the source code, because there are a lot of tokens
+// in a generated parse tree and it would be annoying to have to type all of
+// them to test the parser.
+int parseTreesSimilar(struct parseTree x, struct parseTree y);
+
+void printParseTree(struct parseTree tree);
+
+// Add a production rule to the given grammar. The production rule maps from
+// variable -> productionString, where production string is a space-separated
+// list of other variables and terminals that the variable should produce.
+void addRule(struct grammar grammar, char *variable, char const *productionString);
 
 #endif
