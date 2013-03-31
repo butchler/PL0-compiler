@@ -1,7 +1,12 @@
 #include "src/generator.h"
 #include "src/parser.h"
+#include "src/lib/util.h"
 #include <string.h>
 #include <stdlib.h>
+// For isInteger()
+#include <errno.h>
+#include <limits.h>
+#include <assert.h>
 
 struct vector *generateInstructions(struct parseTree tree) {
     struct generatorState state = (struct generatorState){makeVector(struct symbol), 0, 0};
@@ -13,6 +18,8 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         setGeneratorError("Can't generate NULL parse tree.");
         return NULL;
     }
+
+    printf("Generate %s\n", tree.name);
 
     int is(char *name) {
         return (strcmp(tree.name, name) == 0);
@@ -31,11 +38,18 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
     else if (is("read-statement")) call(generate_readStatement);
     else if (is("write-statement")) call(generate_writeStatement);
     else if (is("if-statement")) call(generate_ifStatement);
-    else if (is("expression")) call(generate_expression);
     else if (is("rel-op")) call(generate_relationalOperator);
+    else if (is("expression")) call(generate_expression);
+    else if (is("add-or-subtract")) call(generate_addOrSubtract);
+    else if (is("term")) call(generate_term);
+    else if (is("multiply-or-divide")) call(generate_multiplyOrDivide);
+    else if (is("factor")) call(generate_factor);
+    else if (is("sign")) call(generate_sign);
+    else if (is("number")) call(generate_number);
+    else if (is("identifier")) call(generate_identifier);
 
-    if (result == NULL)
-        setGeneratorError("Unknown node type in parse tree.");
+    /*if (result == NULL)
+        setGeneratorError(format("Unknown node type '%s' in parse tree.", tree.name));*/
 
     return result;
 }
@@ -91,7 +105,7 @@ struct vector *generate_varDeclaration(struct parseTree tree, struct generatorSt
         }
 
         char *name = get(struct parseTree, identifier.children, 0).name;
-        addSymbol(state, name);
+        addVariable(state, name, numVars);
         numVars += 1;
 
         identifiers = getChild(identifiers, "identifiers");
@@ -111,15 +125,17 @@ struct vector *generate_statement(struct parseTree tree, struct generatorState s
 struct vector *generate_statements(struct parseTree tree, struct generatorState state) {
     struct vector *result = makeVector(struct instruction);
 
+    // Descent the tree of statements.
     struct parseTree statements = tree;
     while (statements.name != NULL) {
+        // Get the next statement.
         struct parseTree statement = getChild(statements, "statement");
-        if (statement.name == NULL) {
-            freeVector(result);
-            setGeneratorError("Expected statement inside statements.");
-            return NULL;
-        }
+        // If there is no statement here, assume there are no more statements
+        // left and exit the loop.
+        if (statement.name == NULL)
+            break;
 
+        // Generate the code for the new statement and append it to the result.
         struct vector *statementCode = generate(statement, state);
         if (statementCode == NULL)
             return NULL;
@@ -129,6 +145,7 @@ struct vector *generate_statements(struct parseTree tree, struct generatorState 
 
         freeVector(statementCode);
 
+        // Get the next statements node.
         statements = getChild(statements, "statements");
     }
 
@@ -236,6 +253,249 @@ struct vector *generate_ifStatement(struct parseTree tree, struct generatorState
 }
 
 struct vector *generate_expression(struct parseTree tree, struct generatorState state) {
+    struct parseTree term = getChild(tree, "term");
+    struct parseTree addOrSubtract = getChild(tree, "add-or-subtract");
+    struct parseTree expression = getChild(tree, "expression");
+
+    // Calculate the term.
+    struct vector *result = makeVector(struct instruction);
+    struct vector *termCode = generate(term, state);
+    if (termCode == NULL)
+        return NULL;
+    state.currentAddress += termCode->length;
+    vector_concat(result, termCode);
+
+    // If we are adding or subtracting to/from the term.
+    if (addOrSubtract.name != NULL) {
+        if (expression.name == NULL) {
+            setGeneratorError("Expected expression after add-or-subtract.");
+            return NULL;
+        }
+
+        // Calculate the expression.
+        struct vector *expressionCode = generate(expression, state);
+        if (expressionCode == NULL)
+            return NULL;
+        state.currentAddress += expressionCode->length;
+        vector_concat(result, expressionCode);
+
+        // Afterward, the results of calculating the term and expression should
+        // be at the top of the stack, so we just need to add an add or
+        // subtract instruction at the very end and it will take them off the
+        // stack, add/subtract them, and push the result to the stack.
+        struct vector *addOrSubtractCode = generate(addOrSubtract, state);
+        if (addOrSubtractCode == NULL)
+            return NULL;
+        vector_concat(result, addOrSubtractCode);
+    }
+
+    if (addOrSubtract.name == NULL)
+        printf("No add-or-subtract\n");
+
+    return result;
+}
+
+struct vector *generate_addOrSubtract(struct parseTree tree, struct generatorState state) {
+    struct vector *result = makeVector(struct instruction);
+
+    char *plusOrMinus = get(char*, tree.children, 0);
+    if (strcmp(plusOrMinus, "+") == 0) {
+        // + = opr 0 2
+        pushLiteral(result, struct instruction, makeInstruction("opr", 0, 2));
+    } else if (strcmp(plusOrMinus, "-") == 0) {
+        // - = opr 0 3
+        pushLiteral(result, struct instruction, makeInstruction("opr", 0, 3));
+    } else {
+        setGeneratorError("Expected + or - inside add-or-substract");
+        return NULL;
+    }
+
+    return result;
+}
+
+struct vector *generate_term(struct parseTree tree, struct generatorState state) {
+    struct parseTree factor = getChild(tree, "factor");
+    struct parseTree multiplyOrDivide = getChild(tree, "multiply-or-divide");
+    struct parseTree term = getChild(tree, "term");
+
+    // Calculate the factor.
+    struct vector *result = makeVector(struct instruction);
+    struct vector *factorCode = generate(factor, state);
+    if (factorCode == NULL)
+        return NULL;
+    state.currentAddress += factorCode->length;
+    vector_concat(result, factorCode);
+
+    // If we are adding or subtracting to/from the term.
+    if (multiplyOrDivide.name != NULL) {
+        if (term.name == NULL) {
+            setGeneratorError("Expected term after multiply-or-divide.");
+            return NULL;
+        }
+
+        // Calculate the term.
+        struct vector *termCode = generate(term, state);
+        if (termCode == NULL)
+            return NULL;
+        state.currentAddress += termCode->length;
+        vector_concat(result, termCode);
+
+        // Multipy or divide the results of the factor and term.
+        struct vector *multiplyOrDivideCode = generate(multiplyOrDivide, state);
+        if (multiplyOrDivideCode == NULL)
+            return NULL;
+        vector_concat(result, multiplyOrDivideCode);
+    }
+
+    return result;
+}
+
+struct vector *generate_multiplyOrDivide(struct parseTree tree, struct generatorState state) {
+    struct vector *result = makeVector(struct instruction);
+
+    char *starOrSlash = get(char*, tree.children, 0);
+    if (strcmp(starOrSlash, "*") == 0) {
+        // * = opr 0 4
+        pushLiteral(result, struct instruction, makeInstruction("opr", 0, 4));
+    } else if (strcmp(starOrSlash, "/") == 0) {
+        // / = opr 0 5
+        pushLiteral(result, struct instruction, makeInstruction("opr", 0, 5));
+    } else {
+        setGeneratorError("Expected * or / inside multiply-or-divide");
+        return NULL;
+    }
+
+    return result;
+}
+
+struct generatorState concatCodeFor(struct parseTree tree, struct vector *destination,
+        struct generatorState state) {
+    printf("concat code for %s\n", tree.name);
+
+    struct vector *code = generate(tree, state);
+    if (code == NULL) {
+        // TODO: Indicate that an error happened.
+        assert(0);
+        return state;
+    }
+    vector_concat(destination, code);
+    state.currentAddress += code->length;
+    return state;
+}
+
+struct vector *generate_factor(struct parseTree tree, struct generatorState state) {
+    struct parseTree expression = getChild(tree, "expression");
+    struct parseTree sign = getChild(tree, "sign");
+    struct parseTree number = getChild(tree, "number");
+    struct parseTree identifier = getChild(tree, "identifier");
+
+    struct vector *result = makeVector(struct instruction);
+
+    if (expression.name != NULL) {
+        concatCodeFor(expression, result, state);
+        return result;
+    }
+
+    if (identifier.name != NULL) {
+        concatCodeFor(identifier, result, state);
+        return result;
+    }
+
+    if (number.name != NULL && sign.name != NULL) {
+        // Calculate the number.
+        state = concatCodeFor(number, result, state);
+        // Possibly negate the number.
+        state = concatCodeFor(sign, result, state);
+
+        return result;
+    }
+
+    setGeneratorError("Expected expression, identifier or sign and number inside 'factor'.");
+    return NULL;
+}
+
+struct vector *generate_sign(struct parseTree tree, struct generatorState state) {
+    struct vector *result = makeVector(struct instruction);
+
+    // If there is a sign and the sign is -, add a negation instruction.
+    if (tree.children->length > 0) {
+        char *sign = get(char*, tree.children, 0);
+        if (strcmp(sign, "-") == 0) {
+            // Negate = opr 0 1
+            pushLiteral(result, struct instruction, makeInstruction("opr", 0, 1));
+        }
+    }
+
+    return result;
+}
+
+// Returns true if the given string represents an integer value.
+// Based on the manpage for strtol.
+int isInteger(char *string) {
+    assert(string != NULL);
+
+    errno = 0;
+    char *endptr = NULL;
+    int value = strtol(string, &endptr, 10);
+
+    // Check for value out of range or some other error occurred.
+    if ((errno == ERANGE && (value == LONG_MAX || value == LONG_MIN))
+            || (errno != 0 && value == 0)) {
+        return 0;
+    }
+
+    // Check if it didn't actually convert anything.
+    if (endptr == string) {
+        return 0;
+    }
+
+    // Check if there are more characters left after the number.
+    if (*endptr != '\0')
+        return 0;
+
+    return 1;
+}
+
+struct vector *generate_number(struct parseTree tree, struct generatorState state) {
+    struct vector *result = makeVector(struct instruction);
+
+    if (tree.children->length < 1) {
+        setGeneratorError("Expected integer value inside 'number'.");
+        return NULL;
+    }
+
+    // Output a literal instruction that pushes the value of the number to the stack.
+    char *number = get(char*, tree.children, 0);
+    if (isInteger(number)) {
+        int value = atoi(number);
+        pushLiteral(result, struct instruction, makeInstruction("lit", 0, value));
+        return result;
+    } else {
+        setGeneratorError("Invalid integer value inside 'number'.");
+        return NULL;
+    }
+}
+
+struct vector *generate_identifier(struct parseTree tree, struct generatorState state) {
+    if (tree.children->length < 1) {
+        setGeneratorError("Expected identifier name inside 'identifier'.");
+        return NULL;
+    }
+
+    struct vector *result = makeVector(struct instruction);
+
+    char *name = get(char*, tree.children, 0);
+    struct symbol var = getSymbol(state, name);
+    if (var.type == VARIABLE) {
+        pushLiteral(result, struct instruction, makeInstruction("lod", var.level, var.address));
+    } else if (var.type == CONSTANT) {
+        pushLiteral(result, struct instruction, makeInstruction("lit", 0, var.constantValue));
+    }
+
+    return result;
+}
+
+/*struct vector *generate_expression(struct parseTree tree, struct generatorState state) {
     struct parseTree number = getChild(tree, "number");
     if (number.name != NULL && number.children != NULL && number.children->length >= 1) {
         char *numberString = get(struct parseTree, number.children, 0).name;
@@ -262,7 +522,7 @@ struct vector *generate_expression(struct parseTree tree, struct generatorState 
 
     setGeneratorError("Expected number or identifier inside expression.");
     return NULL;
-}
+}*/
 
 struct vector *generate_relationalOperator(struct parseTree tree, struct generatorState state) {
     if (tree.children == NULL || tree.children->length < 1) {
@@ -306,11 +566,18 @@ struct instruction makeInstruction(char *instruction, int lexicalLevel, int modi
     return (struct instruction){getOpcode(instruction), instruction, lexicalLevel, modifier};
 }
 
-struct symbol addSymbol(struct generatorState state, char *name) {
-    struct symbol symbol = {name, state.currentLevel};
+struct symbol addVariable(struct generatorState state, char *name, int address) {
+    struct symbol symbol = {name, VARIABLE, state.currentLevel, address, 0};
     push(state.symbols, symbol);
+    return symbol;
+}
+struct symbol addConstant(struct generatorState state, char *name, int value) {
+    struct symbol symbol = {name, CONSTANT, state.currentLevel, 0, value};
+    push(state.symbols, symbol);
+    return symbol;
 }
 struct symbol getSymbol(struct generatorState state, char *name) {
+    // TODO: Check for symbols in higher lexical levels.
     int i;
     for (i = 0; i < state.symbols->length; i++) {
         struct symbol symbol = get(struct symbol, state.symbols, i);

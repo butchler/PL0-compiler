@@ -157,7 +157,7 @@ void testParser() {
     addRule(grammar, "rel-op", "gtrsym");
     addRule(grammar, "rel-op", "geqsym");
 
-    addRule(grammar, "expression", "sign term add-or-substract term");
+    /*addRule(grammar, "expression", "sign term add-or-substract term");
     addRule(grammar, "expression", "sign term");
     addRule(grammar, "sign", "plussym");
     addRule(grammar, "sign", "minussym");
@@ -170,7 +170,21 @@ void testParser() {
     addRule(grammar, "multiply-or-divide", "slashsym");
     addRule(grammar, "factor", "lparentsym expression rparentsym");
     addRule(grammar, "factor", "identifier");
-    addRule(grammar, "factor", "number");
+    addRule(grammar, "factor", "number");*/
+    addRule(grammar, "expression", "term add-or-substract expression");
+    addRule(grammar, "expression", "term");
+    addRule(grammar, "add-or-substract", "plussym");
+    addRule(grammar, "add-or-substract", "minussym");
+    addRule(grammar, "term", "factor multiply-or-divide term");
+    addRule(grammar, "term", "factor");
+    addRule(grammar, "multiply-or-divide", "multsym");
+    addRule(grammar, "multiply-or-divide", "slashsym");
+    addRule(grammar, "factor", "lparentsym expression rparentsym");
+    addRule(grammar, "factor", "sign number");
+    addRule(grammar, "factor", "identifier");
+    addRule(grammar, "sign", "plussym");
+    addRule(grammar, "sign", "minussym");
+    addRule(grammar, "sign", "nothing");
 
     addRule(grammar, "while-statement", "whilesym condition dosym statement");
 
@@ -179,12 +193,6 @@ void testParser() {
 
     addRule(grammar, "identifier", "identsym");
     addRule(grammar, "number", "numbersym");
-
-    addRule(grammar, "identifier", "keep-tokens");
-    addRule(grammar, "number", "keep-tokens");
-    addRule(grammar, "add-or-subtract", "keep-tokens");
-    addRule(grammar, "multiply-or-divide", "keep-tokens");
-    addRule(grammar, "rel-op", "keep-tokens");
 
     lexemes = readLexemes(
             "const a = 5, b = 10;\n"
@@ -200,7 +208,7 @@ void testParser() {
     assert(lexemes != NULL);
     tree = parseProgram(lexemes, grammar);
     assert(tree.name != NULL);
-    //printParseTree(tree, 0);
+    //printParseTree(tree);
     // TODO: Write giant parse tree to test this program.
 }
 
@@ -240,8 +248,9 @@ void testCodeGenerator() {
                                                     (identifier x)))))))))));
 
         // TODO: Free parse tree.
+        // TODO: Fix this parse tree to align with new grammar.
         
-        struct vector *instructions = generateInstructions(tree);
+        /*struct vector *instructions = generateInstructions(tree);
         // int x;
         // begin
         //     read x
@@ -265,10 +274,56 @@ void testCodeGenerator() {
                     " opr 0 0"   // Return/Exit
                     ));
 
-        freeVector(instructions);
+        freeVector(instructions);*/
+    }
+
+    void testExpression() {
+        // Read tokens.
+        initLexer();
+        //struct vector *lexemes = readLexemes("-3 * (5 + (-10))");
+        //struct vector *lexemes = readLexemes("-3 * (5 + -10)");
+        struct vector *lexemes = readLexemes("1 + 2 + 3");
+
+        // Define grammar.
+        struct grammar grammar = {makeVector(struct rule)};
+        addRule(grammar, "expression", "term add-or-subtract expression");
+        addRule(grammar, "expression", "term");
+        addRule(grammar, "add-or-subtract", "plussym");
+        addRule(grammar, "add-or-subtract", "minussym");
+        addRule(grammar, "term", "factor multiply-or-divide term");
+        addRule(grammar, "term", "factor");
+        addRule(grammar, "multiply-or-divide", "multsym");
+        addRule(grammar, "multiply-or-divide", "slashsym");
+        addRule(grammar, "factor", "lparentsym expression rparentsym");
+        addRule(grammar, "factor", "sign number");
+        addRule(grammar, "factor", "identifier");
+        addRule(grammar, "sign", "plussym");
+        addRule(grammar, "sign", "minussym");
+        addRule(grammar, "sign", "nothing");
+        addRule(grammar, "number", "numbersym");
+
+        // Parse tokens.
+        struct parseTree tree = parse(lexemes, 0, "expression", grammar);
+        printParseTree(tree);
+
+        // Generate code.
+        struct vector *instructions = generateInstructions(tree);
+        if (instructions == NULL)
+            puts(getGeneratorError());
+        assert(instructions != NULL);
+        /*assert(instructionsEqual(instructions,
+                    ""
+                    ));*/
+        int i;
+        for (i = 0; i < instructions->length; i++) {
+            struct instruction instruction = get(struct instruction, instructions, 0);
+            printf("%s %d %d\n", instruction.opcodeName,
+                    instruction.lexicalLevel, instruction.modifier);
+        }
     }
 
     testIfStatement();
+    testExpression();
 }
 
 int main() {
