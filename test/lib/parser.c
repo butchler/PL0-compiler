@@ -168,20 +168,3 @@ void printParseTree(struct parseTree root) {
     print(root, 0);
 }
 
-void addRule(struct grammar grammar, char *variable, char const * constProductionString) {
-    // strsep modifies the string, so we need to make sure that the production
-    // string is mutable. But, we still want to be able to pass string literals
-    // as arguments to addRule, so make a mutable copy of the string that was
-    // passed in.
-    char *productionString = strdup(constProductionString);
-    struct vector *production = makeVector(char*);
-    // While there are still variables or terminals in the production string.
-    // Checking for strlen(productionString) > 0 allows an empty string as a
-    // valid production rule, just in case you wanted to do that.
-    while (productionString != NULL && strlen(productionString) > 0) {
-        char *varOrTerminal = strsep(&productionString, " ");
-        push(production, varOrTerminal);
-    }
-    pushLiteral(grammar.rules, struct rule, {variable, production});
-}
-

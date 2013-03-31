@@ -40,6 +40,7 @@ void vector_push(struct vector *vector, void *item) {
 
 void* vector_get(struct vector *vector, int index) {
     assert(vector != NULL);
+    assert(index >= 0 && index < vector->length);
 
     int offset = index * vector->itemSize;
     return (void*)((char*)(vector->items) + offset);
@@ -83,13 +84,12 @@ void vector_resize(struct vector *vector, int newCapacity) {
 
 struct vector *vector_concat(struct vector *toVector, struct vector *fromVector) {
     assert(toVector != NULL && fromVector != NULL);
+    assert(toVector->itemSize == fromVector->itemSize);
 
-    printf("vector_concat\n");
     int i;
     for (i = 0; i < fromVector->length; i++) {
         void *item = vector_get(fromVector, i);
         vector_push(toVector, item);
-        printf("%d %d %s\n", *(int*)(item + 0), *(int*)(item + 4), *(int*)(item + 8));
     }
 
     return toVector;

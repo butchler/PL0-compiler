@@ -28,9 +28,4 @@ int parseTreesSimilar(struct parseTree x, struct parseTree y);
 
 void printParseTree(struct parseTree tree);
 
-// Add a production rule to the given grammar. The production rule maps from
-// variable -> productionString, where production string is a space-separated
-// list of other variables and terminals that the variable should produce.
-void addRule(struct grammar grammar, char *variable, char const *productionString);
-
 #endif

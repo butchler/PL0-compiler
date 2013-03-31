@@ -3,10 +3,6 @@
 #include "src/lib/util.h"
 #include <string.h>
 #include <stdlib.h>
-// For isInteger()
-#include <errno.h>
-#include <limits.h>
-#include <assert.h>
 
 struct vector *generateInstructions(struct parseTree tree) {
     struct generatorState state = (struct generatorState){makeVector(struct symbol), 0, 0};
@@ -19,8 +15,6 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
         return NULL;
     }
 
-    printf("Generate %s\n", tree.name);
-
     int is(char *name) {
         return (strcmp(tree.name, name) == 0);
     }
@@ -28,6 +22,10 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
     void call(struct vector *(*generateFunction)(struct parseTree, struct generatorState)) {
         result = (*generateFunction)(tree, state);
     }
+
+    // If the node type is known and there is an error, then this error message
+    // will be overwritten.
+    setGeneratorError(format("Unknown node type '%s' in parse tree.", tree.name));
 
     if (is("program")) call(generate_program);
     else if (is("block")) call(generate_block);
@@ -47,9 +45,6 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
     else if (is("sign")) call(generate_sign);
     else if (is("number")) call(generate_number);
     else if (is("identifier")) call(generate_identifier);
-
-    /*if (result == NULL)
-        setGeneratorError(format("Unknown node type '%s' in parse tree.", tree.name));*/
 
     return result;
 }
@@ -289,9 +284,6 @@ struct vector *generate_expression(struct parseTree tree, struct generatorState 
         vector_concat(result, addOrSubtractCode);
     }
 
-    if (addOrSubtract.name == NULL)
-        printf("No add-or-subtract\n");
-
     return result;
 }
 
@@ -370,14 +362,9 @@ struct vector *generate_multiplyOrDivide(struct parseTree tree, struct generator
 
 struct generatorState concatCodeFor(struct parseTree tree, struct vector *destination,
         struct generatorState state) {
-    printf("concat code for %s\n", tree.name);
-
     struct vector *code = generate(tree, state);
-    if (code == NULL) {
-        // TODO: Indicate that an error happened.
-        assert(0);
+    if (code == NULL)
         return state;
-    }
     vector_concat(destination, code);
     state.currentAddress += code->length;
     return state;
@@ -427,33 +414,6 @@ struct vector *generate_sign(struct parseTree tree, struct generatorState state)
     }
 
     return result;
-}
-
-// Returns true if the given string represents an integer value.
-// Based on the manpage for strtol.
-int isInteger(char *string) {
-    assert(string != NULL);
-
-    errno = 0;
-    char *endptr = NULL;
-    int value = strtol(string, &endptr, 10);
-
-    // Check for value out of range or some other error occurred.
-    if ((errno == ERANGE && (value == LONG_MAX || value == LONG_MIN))
-            || (errno != 0 && value == 0)) {
-        return 0;
-    }
-
-    // Check if it didn't actually convert anything.
-    if (endptr == string) {
-        return 0;
-    }
-
-    // Check if there are more characters left after the number.
-    if (*endptr != '\0')
-        return 0;
-
-    return 1;
 }
 
 struct vector *generate_number(struct parseTree tree, struct generatorState state) {
