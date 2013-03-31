@@ -10,4 +10,7 @@
 // false if they don't.
 int instructionsEqual(struct vector *instructions, char *expectedInstructions);
 
+// Print list of instructions, for debugging.
+void printInstructions(struct vector *instructions);
+
 #endif

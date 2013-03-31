@@ -46,4 +46,9 @@ struct parseTree getChild(struct parseTree parent, char *childName);
 // Returns the last child of the given parseTree that has the given name.
 struct parseTree getLastChild(struct parseTree parent, char *childName);
 
+// Add a production rule to the given grammar. The production rule maps from
+// variable -> productionString, where production string is a space-separated
+// list of other variables and terminals that the variable should produce.
+void addRule(struct grammar grammar, char *variable, char *productionString);
+
 #endif

@@ -40,9 +40,9 @@ void testTestUtil() {
         instruction = (struct instruction){2, 0, 0}; push(instructions, instruction);
         instruction = (struct instruction){3, 0, 0}; push(instructions, instruction);
         assert(instructionsEqual(instructions,
-                    " lit 0 0"
-                    " opr 0 0"
-                    " lod 0 0"));
+                    "lit 0 0,"
+                    "opr 0 0,"
+                    "lod 0 0"));
         assert(!instructionsEqual(instructions, ""));
 
         freeVector(instructions);
@@ -157,7 +157,8 @@ void testParser() {
     addRule(grammar, "rel-op", "gtrsym");
     addRule(grammar, "rel-op", "geqsym");
 
-    addRule(grammar, "expression", "sign term add-or-substract term");
+    // This is the grammar for expressions included in the assignment.
+    /*addRule(grammar, "expression", "sign term add-or-substract term");
     addRule(grammar, "expression", "sign term");
     addRule(grammar, "sign", "plussym");
     addRule(grammar, "sign", "minussym");
@@ -170,7 +171,27 @@ void testParser() {
     addRule(grammar, "multiply-or-divide", "slashsym");
     addRule(grammar, "factor", "lparentsym expression rparentsym");
     addRule(grammar, "factor", "identifier");
-    addRule(grammar, "factor", "number");
+    addRule(grammar, "factor", "number");*/
+
+    // This is an improved grammar for expressions that behaves more like you
+    // would intuitively expeted expressions to behave. For example, 1 + 2 + 3
+    // is not a valid expression in the other grammar, you would have to do
+    // something like 1 + (2 + 3) instead, but it works with this grammar.
+    addRule(grammar, "expression", "term add-or-subtract expression");
+    addRule(grammar, "expression", "term");
+    addRule(grammar, "add-or-subtract", "plussym");
+    addRule(grammar, "add-or-subtract", "minussym");
+    addRule(grammar, "term", "factor multiply-or-divide term");
+    addRule(grammar, "term", "factor");
+    addRule(grammar, "multiply-or-divide", "multsym");
+    addRule(grammar, "multiply-or-divide", "slashsym");
+    addRule(grammar, "factor", "lparentsym expression rparentsym");
+    addRule(grammar, "factor", "sign number");
+    addRule(grammar, "factor", "identifier");
+    addRule(grammar, "sign", "plussym");
+    addRule(grammar, "sign", "minussym");
+    addRule(grammar, "sign", "nothing");
+    addRule(grammar, "number", "numbersym");
 
     addRule(grammar, "while-statement", "whilesym condition dosym statement");
 
@@ -179,12 +200,6 @@ void testParser() {
 
     addRule(grammar, "identifier", "identsym");
     addRule(grammar, "number", "numbersym");
-
-    addRule(grammar, "identifier", "keep-tokens");
-    addRule(grammar, "number", "keep-tokens");
-    addRule(grammar, "add-or-subtract", "keep-tokens");
-    addRule(grammar, "multiply-or-divide", "keep-tokens");
-    addRule(grammar, "rel-op", "keep-tokens");
 
     lexemes = readLexemes(
             "const a = 5, b = 10;\n"
@@ -200,7 +215,7 @@ void testParser() {
     assert(lexemes != NULL);
     tree = parseProgram(lexemes, grammar);
     assert(tree.name != NULL);
-    //printParseTree(tree, 0);
+    //printParseTree(tree);
     // TODO: Write giant parse tree to test this program.
 }
 
@@ -240,8 +255,9 @@ void testCodeGenerator() {
                                                     (identifier x)))))))))));
 
         // TODO: Free parse tree.
+        // TODO: Fix this parse tree to align with new grammar.
         
-        struct vector *instructions = generateInstructions(tree);
+        /*struct vector *instructions = generateInstructions(tree);
         // int x;
         // begin
         //     read x
@@ -265,10 +281,60 @@ void testCodeGenerator() {
                     " opr 0 0"   // Return/Exit
                     ));
 
-        freeVector(instructions);
+        freeVector(instructions);*/
+    }
+
+    void testExpression() {
+        initLexer();
+
+        // Define grammar.
+        struct grammar grammar = {makeVector(struct rule)};
+        addRule(grammar, "expression", "term add-or-subtract expression");
+        addRule(grammar, "expression", "term");
+        addRule(grammar, "add-or-subtract", "plussym");
+        addRule(grammar, "add-or-subtract", "minussym");
+        addRule(grammar, "term", "factor multiply-or-divide term");
+        addRule(grammar, "term", "factor");
+        addRule(grammar, "multiply-or-divide", "multsym");
+        addRule(grammar, "multiply-or-divide", "slashsym");
+        addRule(grammar, "factor", "lparentsym expression rparentsym");
+        addRule(grammar, "factor", "sign number");
+        addRule(grammar, "factor", "identifier");
+        addRule(grammar, "sign", "plussym");
+        addRule(grammar, "sign", "minussym");
+        addRule(grammar, "sign", "nothing");
+        addRule(grammar, "number", "numbersym");
+
+        int expressionBecomes(char *expression, char *expectedInstructions) {
+            // Read tokens.
+            struct vector *lexemes = readLexemes(expression);
+            // Parse tokens.
+            struct parseTree tree = parse(lexemes, 0, "expression", grammar);
+            // Generate code.
+            struct vector *instructions = generateInstructions(tree);
+            if (instructions == NULL)
+                puts(getGeneratorError());
+            assert(instructions != NULL);
+            // Test generated code.
+            return instructionsEqual(instructions, expectedInstructions);
+        }
+
+        assert(expressionBecomes("5", "lit 0 5"));
+        assert(expressionBecomes("-100", "lit 0 100, opr 0 1"));
+        assert(expressionBecomes("5 + 10", "lit 0 5, lit 0 10, opr 0 2"));
+        assert(expressionBecomes("1 + 2 + 3", "lit 0 1, lit 0 2, lit 0 3, opr 0 2, opr 0 2"));
+        assert(expressionBecomes("-3 * (5 + -10)",
+                    "lit 0 3,"
+                    "opr 0 1,"
+                    "lit 0 5,"
+                    "lit 0 10,"
+                    "opr 0 1,"
+                    "opr 0 2,"
+                    "opr 0 4"));
     }
 
     testIfStatement();
+    testExpression();
 }
 
 int main() {

@@ -1,6 +1,6 @@
 #include "src/parser.h"
 #include "src/lexer.h"
-#include "src/lib/util.h"   // For format()
+#include "src/lib/util.h"
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -170,5 +170,10 @@ struct parseTree getLastChild(struct parseTree parent, char *childName) {
     }
 
     return (struct parseTree){NULL, NULL, -1};
+}
+
+void addRule(struct grammar grammar, char *variable, char *productionString) {
+    struct vector *production = splitString(productionString, " ");
+    pushLiteral(grammar.rules, struct rule, {variable, production});
 }
 

@@ -19,9 +19,14 @@ struct instruction {
 // track of its address so we can load its value.
 struct symbol {
     char *name;
+    int type;      // Whether the symbol is of a variable, a constant, or a procedure.
     int level;     // The lexical level of the symbol.
-    int address;   // The address of the symbol on the stack, in it's lexical level.
+    int address;   // The address of the symbol on the stack, in it's lexical
+                   // level, or the address in the code if it's a procedure.
+    int constantValue;     // If it's a constant, holds the value of the constant.
 };
+// Symbol types
+enum { VARIABLE = 1, CONSTANT, PROCEDURE };
 
 // Used in the generate function to keep track of the current state.
 struct generatorState {
@@ -45,8 +50,15 @@ struct vector *generate_beginBlock(struct parseTree tree, struct generatorState 
 struct vector *generate_readStatement(struct parseTree tree, struct generatorState state);
 struct vector *generate_writeStatement(struct parseTree tree, struct generatorState state);
 struct vector *generate_ifStatement(struct parseTree tree, struct generatorState state);
-struct vector *generate_expression(struct parseTree tree, struct generatorState state);
 struct vector *generate_relationalOperator(struct parseTree tree, struct generatorState state);
+struct vector *generate_expression(struct parseTree tree, struct generatorState state);
+struct vector *generate_addOrSubtract(struct parseTree tree, struct generatorState state);
+struct vector *generate_term(struct parseTree tree, struct generatorState state);
+struct vector *generate_multiplyOrDivide(struct parseTree tree, struct generatorState state);
+struct vector *generate_factor(struct parseTree tree, struct generatorState state);
+struct vector *generate_sign(struct parseTree tree, struct generatorState state);
+struct vector *generate_number(struct parseTree tree, struct generatorState state);
+struct vector *generate_identifier(struct parseTree tree, struct generatorState state);
 
 // Given a string represtation of an instruction, such as "lit" or "sto",
 // return the corresponding integer opcode.
@@ -56,7 +68,8 @@ int getOpcode(char *instruction);
 struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier);
 
 // Add and get a symbol from the symbol table.
-struct symbol addSymbol(struct generatorState state, char *name);
+struct symbol addVariable(struct generatorState state, char *name, int address);
+struct symbol addConstant(struct generatorState state, char *name, int value);
 struct symbol getSymbol(struct generatorState state, char *name);
 
 // Get and set an error in case a function returns a failure value.
