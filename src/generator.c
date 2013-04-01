@@ -151,7 +151,7 @@ void generate_beginBlock(struct parseTree tree, struct generatorState *state) {
 void generate_readStatement(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "identifier"));
 
-    addInstruction(state, "sio", 0, 2);
+    addInstruction(state, "read", 0, 2);
     addStoreInstruction(state, getChild(tree, "identifier"));
 }
 
@@ -334,6 +334,7 @@ int getOpcode(char *instruction) {
     if (strcmp(instruction, "jmp") == 0) return 7;
     if (strcmp(instruction, "jpc") == 0) return 8;
     if (strcmp(instruction, "sio") == 0) return 9;
+    if (strcmp(instruction, "read") == 0) return 10;
 
     return 0;
 }

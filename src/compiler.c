@@ -14,7 +14,7 @@ char *readContents(char *filename);
 int main(int argc, char **argv) {
     if (argc < 2) {
         assert(argc >= 1);
-        printf("Usage: %s <PL/0 source code filename> [<verbosity>]\n", argv[0]);
+        printf("Usage: %s <PL/0 source code filename> [<verbosity level>]\n", argv[0]);
         return 1;
     }
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     char *sourceCode = readContents(argv[1]);
     assert(sourceCode != NULL);
 
-    if (verbose > 0)
+    if (verbose >= 2)
         printf("Source code:\n%s\n", sourceCode);
 
     // Read tokens.
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (verbose > 1) {
+    if (verbose >= 3) {
         printf("Parse tree:\n");
         printParseTree(tree);
         printf("\n");
@@ -62,9 +62,16 @@ int main(int argc, char **argv) {
     }
 
     assert(instructions != NULL);
-    if (verbose > 0)
+    if (verbose >= 1) {
         printf("Generated instructions:\n");
-    printInstructions(instructions);
+        printInstructions(instructions);
+    } else {
+        forVector(instructions, i, struct instruction, instruction,
+                printf("%d %d %d\n",
+                    instruction.opcode,
+                    instruction.lexicalLevel,
+                    instruction.modifier););
+    }
 
     return 0;
 }
