@@ -1,0 +1,78 @@
+Source code:
+const a = 500, b = 2, c = 3;
+int x, y, z;
+begin
+    if a > 2 then
+      z:=3;
+    x:= z*a;
+    y:= b*z*c
+end.
+
+Tokens:
+28 2 a 9 3 500 17 2 b 9 3 2 17 2 c 9 3 3 18 29 2 x 17 2 y 17 2 z 18 21 23 2 a 13 3 2 24 2 z 20 3 3 18 2 x 20 2 z 6 2 a 18 2 y 20 2 b 6 2 z 6 2 c 22 19 
+
+Tokens with token names:
+constsym identsym a eqsym numbersym 500 commasym identsym b eqsym numbersym 2 commasym identsym c eqsym numbersym 3 semicolonsym intsym identsym x commasym identsym y commasym identsym z semicolonsym beginsym ifsym identsym a gtrsym numbersym 2 thensym identsym z becomessym numbersym 3 semicolonsym identsym x becomessym identsym z multsym identsym a semicolonsym identsym y becomessym identsym b multsym identsym z multsym identsym c endsym periodsym 
+
+Everything Parsed correct.
+
+Generated instructions:
+inc 0 3
+lit 0 500
+lit 0 2
+opr 0 12
+jpc 0 7
+lit 0 3
+sto 0 2
+lod 0 2
+lit 0 500
+opr 0 4
+sto 0 0
+lit 0 2
+lod 0 2
+lit 0 3
+opr 0 4
+opr 0 4
+sto 0 1
+opr 0 0
+
+Line  OP    L     M     
+0     inc   0     3     
+1     lit   0     500   
+2     lit   0     2     
+3     opr   0     12    
+4     jpc   0     7     
+5     lit   0     3     
+6     sto   0     2     
+7     lod   0     2     
+8     lit   0     500   
+9     opr   0     4     
+10    sto   0     0     
+11    lit   0     2     
+12    lod   0     2     
+13    lit   0     3     
+14    opr   0     4     
+15    opr   0     4     
+16    sto   0     1     
+17    opr   0     0     
+
+                              pc    bp    sp    stack
+Initial values                0     1     0     
+0     inc   0     3           1     1     3     0 0 0 
+1     lit   0     500         2     1     4     0 0 0 500 
+2     lit   0     2           3     1     5     0 0 0 500 2 
+3     opr   0     12          4     1     4     0 0 0 1 
+4     jpc   0     7           5     1     3     0 0 0 
+5     lit   0     3           6     1     4     0 0 0 3 
+6     sto   0     2           7     1     3     0 0 3 
+7     lod   0     2           8     1     4     0 0 3 3 
+8     lit   0     500         9     1     5     0 0 3 3 500 
+9     opr   0     4           10    1     4     0 0 3 1500 
+10    sto   0     0           11    1     3     1500 0 3 
+11    lit   0     2           12    1     4     1500 0 3 2 
+12    lod   0     2           13    1     5     1500 0 3 2 3 
+13    lit   0     3           14    1     6     1500 0 3 2 3 3 
+14    opr   0     4           15    1     5     1500 0 3 2 9 
+15    opr   0     4           16    1     4     1500 0 3 18 
+16    sto   0     1           17    1     3     1500 18 3 
+17    opr   0     0           18    0     0     

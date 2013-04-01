@@ -59,12 +59,16 @@ int main(int argc, char **argv) {
         printf("Error while parsing program. This is what the parser was able to parse:\n");
         printParseTree(tree);
         return 1;
-    }
+    } 
+
+    if( verbose > 0)
+      printf("Everything Parsed correct.\n\n");
 
     // Print parse tree.
     if (verbose >= 4) {
         printf("Parse tree:\n");
         printParseTree(tree);
+
         printf("\n");
     }
 
