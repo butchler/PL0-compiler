@@ -52,6 +52,7 @@ void generate_constants(struct parseTree tree, struct generatorState *state);
 void generate_constant(struct parseTree tree, struct generatorState *state);
 void generate_statement(struct parseTree tree, struct generatorState *state);
 void generate_statements(struct parseTree tree, struct generatorState *state);
+void generate_assignment(struct parseTree tree, struct generatorState *state);
 void generate_beginBlock(struct parseTree tree, struct generatorState *state);
 void generate_readStatement(struct parseTree tree, struct generatorState *state);
 void generate_writeStatement(struct parseTree tree, struct generatorState *state);

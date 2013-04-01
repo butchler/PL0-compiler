@@ -39,6 +39,7 @@ void generate(struct parseTree tree, struct generatorState *state) {
     else if (is("constants")) call(generate_constants);
     else if (is("constant")) call(generate_constant);
     else if (is("statement")) call(generate_statement);
+    else if (is("assignment")) call(generate_assignment);
     else if (is("begin-block")) call(generate_beginBlock);
     else if (is("statements")) call(generate_statements);
     else if (is("read-statement")) call(generate_readStatement);
