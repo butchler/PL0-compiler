@@ -50,7 +50,145 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
     else if (is("number")) call(generate_number);
     else if (is("identifier")) call(generate_identifier);
 
+    (grammar
+        (statement (-> while condition do statement)
+                   (concat (generate condition)
+                           (instruction jpc 0 (+ 2
+                                                 (address)
+                                                 (length (generate condition))
+                                                 (length (generate statement))))
+                           (generate statement)
+                           (instruction jmp 0 (address)))
+                   (-> identifier ":=" expression)
+                   (concat (generate expression)
+                           (store-instruction identifier))
+                   ...)
+        (expression (-> ...)
+                    (...)
+                    ...))
+
+    match(program (concat (generate-child block) (instruction opr 0 0))
+          var-declaration (instruction inc 0 (length (generate-child vars)))
+          vars (or (concat (generate-child var) (generate-child vars))
+                   (generate-child var))
+          var (do (add-variable (get-child identifier)) (instruction inc 0 1))
+          const-declaration (generate-child constants)
+          constants (or (concat (generate-child constant) (generate-child constants))
+                        (generate-child constant))
+          constant (add-constant (get-child identifier) (get-child number))
+          statement (or (generate-child if-statement)
+                        (generate-child read-statement)
+                        (generate-child write-statement)
+                        (generate-child while-statement)
+                        (generate-child begin-block)
+                        (generate-child call-statement)
+                        (generate-child assignment))
+          assignment (concat (generate-child expression)
+                             (store-instruction (get-child identifier)))
+          begin-block (generate-child statements)
+          statements (or (concat (generate-child statement) (generate-child statements))
+                         (generate-child statement))
+          read-statement (concat (instruction sio 0 2)
+                                 (store-instruction (get-child identifier)))
+          write-statement (concat (load-instruction get-child identifier)
+                                  (instruction sio 0 1))
+          identifier (load-instruction (get-child identifier))
+          number (instruction lit 0 (get-number (get-child number)))
+          if-statement (concat (generate-child condition)
+                               (instruction jpc 0 (+ (address)
+                                                     (length (generate-child condition))
+                                                     (length (generate-child statement))
+                                                     1))
+                               (generate-child statement))
+          condition (or (concat (generate-child odd) (generate-child expression))
+                        (concat (generate (get-child expression 0))
+                                (generate (get-child expression 1))
+                                (generate-child rel-op)))
+          rel-op (or (generate-child =) (generate-child <>) (generate-child <)
+                     (generate-child >) (generate-child <=)(generate-child >=))
+          =  (instruction opr 0 8)
+          <> (instruction opr 0 9)
+          <  (instruction opr 0 10)
+          <= (instruction opr 0 11)
+          >  (instruction opr 0 12)
+          >= (instruction opr 0 13)
+          expression (or (concat (generate-child term)
+                                 (generate-child expression)
+                                 (generate-child add-or-subtract))
+                         (generate-child term))
+          add-or-subtract (or (generate-child +) (generate-child -))
+          + (instruction opr 0 2)
+          - (instruction opr 0 3)
+          term (or (concat (generate-child factor)
+                           (generate-child multiply-or-divide)
+                           (generate-child term))
+                   (generate-child factor))
+          multiply-or-divide (or (generate-child *) (generate-child /))
+          * (instruction opr 0 4)
+          / (instruction opr 0 5)
+          factor (or (generate-child expression)
+                     (concat (generate-child number) (generate-child sign))
+                     (load-instruction (get-child identifier)))
+          sign (has-child - (instruction opr 0 1))
+          while-statement (concat (generate-child condition)
+                                  (instruction jpc 0 (+ (address)
+                                                     (length (generate-child condition))
+                                                     (length (generate-child statement))
+                                                     2))
+                                  (generate-child statement)
+                                  (instruction jmp 0 (address))));
+    // Special forms: instruction, has-child, concat, get-child, generate, generate-child, or, length, address, load-instruction, store-instruction. +, get-number, add-variable, do
+          
+
     return result;
+}
+
+struct parseTree getFirstChild(struct parseTree tree) {
+    assert(tree.children != NULL);
+
+    return get(struct parseTree, tree.children, 0);
+}
+
+struct vector *dsl_generateChild(struct parseTree dslTree, struct parseTree tree,
+        struct generatorState state) {
+    struct vector *result = dsl_getChild(dslTree, tree, state);
+    if (result == NULL)
+        return NULL;
+    if (
+}
+
+struct vector *dsl_getChild(struct parseTree dslTree, struct parseTree tree,
+        struct generatorState state) {
+    struct parseTree dslChild = getFirstChild(dslTree);
+    if (isParseTreeError(dslChild)) {
+        setGeneratorError("No child specified in get-child.");
+    }
+    char *name = getFirstChild(dslTree).name;
+    struct parseTree child = getChild(tree, name);
+    if (isParseTreeError(child)) {
+        setGeneratorError(format("Could not find '%s' inside '%s'.", name, tree.name));
+        return NULL;
+    }
+    struct vector *result = makeVector(struct parseTree);
+    push(result, child);
+    return result;
+}
+
+struct vector *dsl_generate(struct parseTree tree, struct generatorState state) {
+    return generate(tree, state);
+}
+
+struct vector *dsl_or(struct parseTree dslTree, struct parseTree tree,
+        struct generatorState state) {
+    assert(dslTree.children != NULL);
+
+    forVector(dslTree.children, i, struct parseTree, dslChild,
+            struct vector *result = dsl(dslChild, tree, state);
+            if (result != NULL)
+                return result;);
+
+    setGeneratorError(format("Invalid %s.", tree.name));
+    return NULL;
 }
 
 // Sets an error message if the given tree doesn't have a child with the given
