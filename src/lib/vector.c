@@ -95,6 +95,18 @@ struct vector *vector_concat(struct vector *toVector, struct vector *fromVector)
     return toVector;
 }
 
+int vector_find(struct vector *vector, void *value) {
+    assert(vector != NULL && value != NULL);
+
+    int i;
+    for (i = 0; i < vector->length; i++) {
+        if (memcmp(value, vector_get(vector, i), vector->itemSize) == 0)
+            return i;
+    }
+
+    return -1;
+}
+
 void vector_free(struct vector *vector) {
     free(vector->items);
     free(vector);

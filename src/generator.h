@@ -44,12 +44,15 @@ struct vector *generate(struct parseTree tree, struct generatorState state);
 struct vector *generate_program(struct parseTree tree, struct generatorState state);
 struct vector *generate_block(struct parseTree tree, struct generatorState state);
 struct vector *generate_varDeclaration(struct parseTree tree, struct generatorState state);
+struct vector *generate_vars(struct parseTree tree, struct generatorState state);
+struct vector *generate_var(struct parseTree tree, struct generatorState state);
 struct vector *generate_statement(struct parseTree tree, struct generatorState state);
 struct vector *generate_statements(struct parseTree tree, struct generatorState state);
 struct vector *generate_beginBlock(struct parseTree tree, struct generatorState state);
 struct vector *generate_readStatement(struct parseTree tree, struct generatorState state);
 struct vector *generate_writeStatement(struct parseTree tree, struct generatorState state);
 struct vector *generate_ifStatement(struct parseTree tree, struct generatorState state);
+struct vector *generate_condition(struct parseTree tree, struct generatorState state);
 struct vector *generate_relationalOperator(struct parseTree tree, struct generatorState state);
 struct vector *generate_expression(struct parseTree tree, struct generatorState state);
 struct vector *generate_addOrSubtract(struct parseTree tree, struct generatorState state);
@@ -68,9 +71,10 @@ int getOpcode(char *instruction);
 struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier);
 
 // Add and get a symbol from the symbol table.
-struct symbol addVariable(struct generatorState state, char *name, int address);
+struct symbol addVariable(struct generatorState state, char *name);
 struct symbol addConstant(struct generatorState state, char *name, int value);
 struct symbol getSymbol(struct generatorState state, char *name);
+int isSymbolError(struct symbol symbol);
 
 // Get and set an error in case a function returns a failure value.
 void setGeneratorError(char *errorMessage);

@@ -230,7 +230,7 @@ void testCodeGenerator() {
         //     if x = 0 then
         //         write x
         // end.
-        struct parseTree tree = pt(program
+        /*struct parseTree tree = pt(program
                 (block
                     (var-declaration
                         (identifiers
@@ -246,27 +246,45 @@ void testCodeGenerator() {
                                         (if-statement
                                             (condition
                                                 (expression
-                                                    (identifier x))
+                                                    (term (factor (identifier x))))
                                                 (rel-op =)
                                                 (expression
-                                                    (number 0)))
+                                                    (term (factor (sign) (number 0)))))
+                                            (statement
+                                                (write-statement
+                                                    (identifier x)))))))))));*/
+        struct parseTree tree = pt(program
+                (block
+                    (var-declaration
+                        (vars
+                            (var (identifier x))))
+                    (statement
+                        (begin-block
+                            (statements
+                                (statement
+                                    (read-statement
+                                        (identifier x)))
+                                (statements
+                                    (statement
+                                        (if-statement
+                                            (condition
+                                                (expression
+                                                    (term (factor (identifier x))))
+                                                (rel-op =)
+                                                (expression
+                                                    (term (factor (sign) (number 0)))))
                                             (statement
                                                 (write-statement
                                                     (identifier x)))))))))));
 
-        // TODO: Free parse tree.
         // TODO: Fix this parse tree to align with new grammar.
+        printParseTree(tree);
         
-        /*struct vector *instructions = generateInstructions(tree);
-        // int x;
-        // begin
-        //     read x
-        //     if x = 0 then
-        //         write x
-        // end
+        struct vector *instructions = generateInstructions(tree);
         if (instructions == NULL)
             puts(getGeneratorError());
         assert(instructions != NULL);
+        printInstructions(instructions);
         assert(instructionsEqual(instructions,
                     " inc 0 1"   // Reserve space for int x
                     " sio 0 2"   // Read onto stack
@@ -281,7 +299,8 @@ void testCodeGenerator() {
                     " opr 0 0"   // Return/Exit
                     ));
 
-        freeVector(instructions);*/
+        freeParseTree(tree);
+        freeVector(instructions);
     }
 
     void testExpression() {

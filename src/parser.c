@@ -151,14 +151,13 @@ int getTokenType(char *token) {
 }
 
 struct parseTree getChild(struct parseTree parent, char *childName) {
-    int i;
-    for (i = 0; i < parent.children->length; i++) {
-        struct parseTree child = get(struct parseTree, parent.children, i);
+    forVector(parent.children, i, struct parseTree, child,
         if (strcmp(child.name, childName) == 0)
-            return child;
-    }
+            return child;);
 
-    return (struct parseTree){NULL, NULL, -1};
+    /*return errorTree(format("Could not find child with name '%s'.", childName),
+            parent.children);*/
+    return errorTree(NULL, NULL);
 }
 
 struct parseTree getLastChild(struct parseTree parent, char *childName) {
@@ -169,11 +168,23 @@ struct parseTree getLastChild(struct parseTree parent, char *childName) {
             return child;
     }
 
-    return (struct parseTree){NULL, NULL, -1};
+    /*return errorTree(format("Could not find child with name '%s'.", childName),
+            parent.children);*/
+    return errorTree(NULL, NULL);
 }
 
 void addRule(struct grammar grammar, char *variable, char *productionString) {
     struct vector *production = splitString(productionString, " ");
     pushLiteral(grammar.rules, struct rule, {variable, production});
+}
+
+void freeParseTree(struct parseTree tree) {
+    free(tree.name);
+
+    if (tree.children != NULL) {
+        forVector(tree.children, i, struct parseTree, child,
+                freeParseTree(child););
+        freeVector(tree.children);
+    }
 }
 

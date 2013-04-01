@@ -51,4 +51,7 @@ struct parseTree getLastChild(struct parseTree parent, char *childName);
 // list of other variables and terminals that the variable should produce.
 void addRule(struct grammar grammar, char *variable, char *productionString);
 
+// Recursively free a parse tree and all of its children.
+void freeParseTree(struct parseTree tree);
+
 #endif

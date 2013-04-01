@@ -11,7 +11,8 @@ struct vector *generateInstructions(struct parseTree tree) {
 
 struct vector *generate(struct parseTree tree, struct generatorState state) {
     if (tree.name == NULL) {
-        setGeneratorError("Can't generate NULL parse tree.");
+        //setGeneratorError("Can't generate NULL parse tree.");
+        setGeneratorError(format("Can't generate NULL parse tree. (%d)", state.currentAddress));
         return NULL;
     }
 
@@ -30,12 +31,15 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
     if (is("program")) call(generate_program);
     else if (is("block")) call(generate_block);
     else if (is("var-declaration")) call(generate_varDeclaration);
+    else if (is("vars")) call(generate_vars);
+    else if (is("var")) call(generate_var);
     else if (is("statement")) call(generate_statement);
     else if (is("begin-block")) call(generate_beginBlock);
     else if (is("statements")) call(generate_statements);
     else if (is("read-statement")) call(generate_readStatement);
     else if (is("write-statement")) call(generate_writeStatement);
     else if (is("if-statement")) call(generate_ifStatement);
+    else if (is("condition")) call(generate_condition);
     else if (is("rel-op")) call(generate_relationalOperator);
     else if (is("expression")) call(generate_expression);
     else if (is("add-or-subtract")) call(generate_addOrSubtract);
@@ -49,67 +53,128 @@ struct vector *generate(struct parseTree tree, struct generatorState state) {
     return result;
 }
 
+// Sets an error message if the given tree doesn't have a child with the given
+// name. Returns the result of getChild(tree, name).
+struct parseTree expectChild(struct parseTree tree, char *name) {
+    struct parseTree child = getChild(tree, name);
+
+    if (isParseTreeError(child)) {
+        setGeneratorError(format("Expected '%s' inside of '%s'.", name, tree.name));
+    }
+
+    return child;
+}
+struct parseTree expectLastChild(struct parseTree tree, char *name) {
+    struct parseTree child = getLastChild(tree, name);
+
+    if (isParseTreeError(child)) {
+        setGeneratorError(format("Expected '%s' inside of '%s'.", name, tree.name));
+    }
+
+    return child;
+}
+
+// Takes a space-separated list of children names for the given tree and tries
+// to call generate on each of the children with those names, returning the
+// generated code concatenated together in the order they appear in the
+// childrenNames.
+struct vector *concatCode(struct parseTree tree, struct generatorState state, char *childrenNames) {
+    struct vector *result = makeVector(struct instruction);
+    struct vector *names = splitString(childrenNames, " ");
+
+    int i;
+    for (i = 0; i < names->length; i++) {
+        char *name = get(char*, names, i);
+
+        // Get child with the given name.
+        struct parseTree child = expectChild(tree, name);
+        //if (isParseTreeError(child))
+        if (isParseTreeError(child) || child.name == NULL)
+            return NULL;
+
+        // Try to generate code for the child.
+        struct vector *code = generate(child, state);
+        if (code == NULL)
+            return NULL;
+        state.currentAddress += code->length;
+        vector_concat(result, code);
+        freeVector(code);
+
+        free(name);
+    }
+
+    freeVector(names);
+
+    /*if (result->length == 0)
+        return NULL;*/
+
+    return result;
+}
+
+// Takes a tree that represents an identifier (i.e. tree.name = "identifier"),
+// and returns the name of the identifier inside the tree.
+// So, given a tree that looks like (identifier x), returns "x".
+char *getIdentifierName(struct parseTree identifierTree) {
+    if (identifierTree.children->length < 1) {
+        setGeneratorError("Expected identifier name inside 'identifier'.");
+        return NULL;
+    }
+    struct parseTree firstChild = get(struct parseTree, identifierTree.children, 0);
+    return firstChild.name;
+}
+
 struct vector *generate_program(struct parseTree tree, struct generatorState state) {
-    struct vector *result = generate(get(struct parseTree, tree.children, 0), state);
+    struct vector *result = concatCode(tree, state, "block");
     if (result == NULL)
         return NULL;
 
     // Always add a return instruction at the end of the program.
-    struct instruction returnInstruction = makeInstruction("opr", 0, 0);
-    push(result, returnInstruction);
+    pushLiteral(result, struct instruction, makeInstruction("opr", 0, 0));
 
     return result;
 }
 
 struct vector *generate_block(struct parseTree tree, struct generatorState state) {
-    struct vector *result = makeVector(struct instruction);
+    return concatCode(tree, state, "var-declaration statement");
+}
 
-    struct parseTree vars = getChild(tree, "var-declaration");
-    if (vars.name != NULL) {
-        struct vector *varDeclarationCode = generate(vars, state);
-        if (varDeclarationCode == NULL)
-            // Assume that the error message was already set by the call to generate.
-            return NULL;
+struct vector *generate_varDeclaration(struct parseTree tree, struct generatorState state) {
+    struct vector *result = concatCode(tree, state, "vars");
+    if (result == NULL)
+        return NULL;
+    int numVars = result->length;
 
-        vector_concat(result, varDeclarationCode);
-        state.currentAddress += varDeclarationCode->length;
-    }
-
-    struct parseTree statement = getChild(tree, "statement");
-    if (statement.name != NULL) {
-        struct vector *statementCode = generate(statement, state);
-        if (statementCode == NULL)
-            // Assume that the error message was already set by the call to generate.
-            return NULL;
-
-        vector_concat(result, statementCode);
-        state.currentAddress += statementCode->length;
-    }
+    // Add an instruction to reserve space for the variables.
+    // TODO: Also reserve space for the data that the CAL instruction creates.
+    result = makeVector(struct instruction);
+    pushLiteral(result, struct instruction, makeInstruction("inc", 0, numVars));
 
     return result;
 }
 
-struct vector *generate_varDeclaration(struct parseTree tree, struct generatorState state) {
-    struct parseTree identifiers = getChild(tree, "identifiers");
-    int numVars = 0;
-    while (identifiers.name != NULL) {
-        struct parseTree identifier = getChild(identifiers, "identifier");
-        if (identifier.name == NULL) {
-            setGeneratorError("Expected identifier inside var-declaration.");
-            return NULL;
-        }
+struct vector *generate_vars(struct parseTree tree, struct generatorState state) {
+    struct vector *result = concatCode(tree, state, "var vars");
+    if (result != NULL)
+        return result;
+    else
+        return concatCode(tree, state, "var");
+}
 
-        char *name = get(struct parseTree, identifier.children, 0).name;
-        addVariable(state, name, numVars);
-        numVars += 1;
+struct vector *generate_var(struct parseTree tree, struct generatorState state) {
+    struct parseTree identifier = expectChild(tree, "identifier");
+    if (isParseTreeError(identifier))
+        return NULL;
 
-        identifiers = getChild(identifiers, "identifiers");
-    }
+    char *identifierName = getIdentifierName(identifier);
+    if (identifierName == NULL)
+        return NULL;
 
+    addVariable(state, identifierName);
+
+    // Return a dummy instruction so that varDeclaration knows how many
+    // variables were allocated.
     struct vector *result = makeVector(struct instruction);
-    struct instruction incrementInstruction = makeInstruction("inc", 0, numVars);
-    push(result, incrementInstruction);
-
+    pushLiteral(result, struct instruction, makeInstruction("lit", -1, -1));
     return result;
 }
 
@@ -118,133 +183,113 @@ struct vector *generate_statement(struct parseTree tree, struct generatorState s
 }
 
 struct vector *generate_statements(struct parseTree tree, struct generatorState state) {
-    struct vector *result = makeVector(struct instruction);
-
-    // Descent the tree of statements.
-    struct parseTree statements = tree;
-    while (statements.name != NULL) {
-        // Get the next statement.
-        struct parseTree statement = getChild(statements, "statement");
-        // If there is no statement here, assume there are no more statements
-        // left and exit the loop.
-        if (statement.name == NULL)
-            break;
-
-        // Generate the code for the new statement and append it to the result.
-        struct vector *statementCode = generate(statement, state);
-        if (statementCode == NULL)
-            return NULL;
-
-        vector_concat(result, statementCode);
-        state.currentAddress += statementCode->length;
-
-        freeVector(statementCode);
-
-        // Get the next statements node.
-        statements = getChild(statements, "statements");
-    }
-
-    return result;
+    struct vector *result = concatCode(tree, state, "statement statements");
+    if (result != NULL)
+        return result;
+    else
+        return concatCode(tree, state, "statement");
 }
 
 struct vector *generate_beginBlock(struct parseTree tree, struct generatorState state) {
-    return generate(getChild(tree, "statements"), state);
+    return concatCode(tree, state, "statements");
 }
 
 struct vector *generate_readStatement(struct parseTree tree, struct generatorState state) {
-    struct parseTree identifier = getChild(tree, "identifier");
-    if (identifier.name == NULL || identifier.children == NULL || identifier.children->length < 1) {
-        setGeneratorError("Expected identifier inside read-statement.");
+    struct parseTree identifier = expectChild(tree, "identifier");
+    if (isParseTreeError(identifier))
+        return NULL;
+
+    char *identifierName = getIdentifierName(identifier);
+    if (identifierName == NULL)
+        return NULL;
+
+    struct symbol var = getSymbol(state, identifierName);
+    if (isSymbolError(var))
+        return NULL;
+    if (var.type != VARIABLE) {
+        setGeneratorError("Cannot read into a constant or procedure.");
         return NULL;
     }
-    char *name = get(struct parseTree, identifier.children, 0).name;
 
     struct vector *result = makeVector(struct instruction);
-
-    // Read value onto stack.
-    struct instruction readInstruction = makeInstruction("sio", 0, 2);
-    push(result, readInstruction);
-    // Store value in the given variable.
-    struct symbol var = getSymbol(state, name);
-    struct instruction storeInstruction = makeInstruction("sto", var.level, var.address);
-    push(result, storeInstruction);
-
+    pushLiteral(result, struct instruction, makeInstruction("sio", 0, 2));
+    pushLiteral(result, struct instruction, makeInstruction("sto", var.level, var.address));
     return result;
 }
 
 struct vector *generate_writeStatement(struct parseTree tree, struct generatorState state) {
-    struct parseTree identifier = getChild(tree, "identifier");
-    if (identifier.name == NULL || identifier.children == NULL || identifier.children->length < 1) {
-        setGeneratorError("Expected identifier inside write-statement.");
+    // Get the code that loads the identifier onto the stack.
+    struct vector *result = concatCode(tree, state, "identifier");
+    // Add instruction to output the loaded value.
+    if (result == NULL)
         return NULL;
-    }
-    char *name = get(struct parseTree, identifier.children, 0).name;
-
-    struct vector *result = makeVector(struct instruction);
-
-    // Push value of variable onto stack.
-    struct symbol var = getSymbol(state, name);
-    struct instruction loadInstruction = makeInstruction("lod", var.level, var.address);
-    push(result, loadInstruction);
-    // Output value at top of stack.
-    struct instruction writeInstruction = makeInstruction("sio", 0, 1);
-    push(result, writeInstruction);
-
+    pushLiteral(result, struct instruction, makeInstruction("sio", 0, 1));
     return result;
 }
 
 struct vector *generate_ifStatement(struct parseTree tree, struct generatorState state) {
-    struct parseTree condition = getChild(tree, "condition");
-    struct parseTree operator = getChild(condition, "rel-op");
-    struct parseTree leftExpression = getChild(condition, "expression");
-    struct parseTree rightExpression = getLastChild(condition, "expression");
-    struct parseTree statement = getChild(tree, "statement");
+    // Generate the code that will put the result of the condition onto the stack.
+    struct vector *conditionCode = concatCode(tree, state, "condition");
+    if (conditionCode == NULL)
+        return NULL;
+    // Add 1 to simulate the jpc instruction that follows the condition code.
+    state.currentAddress += conditionCode->length + 1;
 
-    struct vector *leftExpressionCode = generate(leftExpression, state);
-    if (leftExpressionCode == NULL)
-        return NULL;
-    state.currentAddress += leftExpressionCode->length;
-    struct vector *rightExpressionCode = generate(rightExpression, state);
-    if (rightExpressionCode == NULL)
-        return NULL;
-    state.currentAddress += rightExpressionCode->length;
-    struct vector *operatorCode = generate(operator, state);
-    if (operatorCode == NULL)
-        return NULL;
-    state.currentAddress += operatorCode->length;
-    struct vector *statementCode = generate(statement, state);
+    // Generate the statement code first so we can find out how long it is.
+    struct vector *statementCode = concatCode(tree, state, "statement");
     if (statementCode == NULL)
         return NULL;
 
+    // Add a jpc instruction to jump to after the if statement if the condition failed.
     struct vector *result = makeVector(struct instruction);
-
-    // The left expression code puts the result of the expression on the
-    // top of the stack.
-    vector_concat(result, leftExpressionCode);
-    // The right expression code puts the result of the expression on the
-    // top of the stack, above the result of the left expression.
-    vector_concat(result, rightExpressionCode);
-    // The relation operator code removes the two values at the top of the
-    // stack and compares them, replacing them with a result at the top of
-    // the stack.
-    vector_concat(result, operatorCode);
-    // jpc = jump conditional, which jumps to the given address if the
-    // value at the top of the statck is a zero. If the relational operator
-    // produces a zero, then that means the comparison was false, so it
-    // should jump to after the statement. So, it should jump to the
-    // current address plus the length of the statement, plus one to take
-    // the jpc instruction into account.
-    state.currentAddress += 1 + statementCode->length;
-    struct instruction branchInstruction = makeInstruction("jpc", 0, state.currentAddress);
-    push(result, branchInstruction);
+    vector_concat(result, conditionCode);
+    pushLiteral(result, struct instruction,
+            makeInstruction("jpc", 0, state.currentAddress + statementCode->length));
     vector_concat(result, statementCode);
 
-    freeVector(leftExpressionCode);
-    freeVector(rightExpressionCode);
-    freeVector(operatorCode);
-    freeVector(statementCode);
-
     return result;
+}
+
+struct vector *generate_condition(struct parseTree tree, struct generatorState state) {
+    struct parseTree oddsym = expectChild(tree, "odd");
+    if (!isParseTreeError(oddsym)) {
+        struct vector *result = concatCode(tree, state, "expression");
+        if (result == NULL)
+            return NULL;
+        // opr 0 6 = odd, replaces the top element of the stack with whether or
+        // not it's value was odd.
+        pushLiteral(result, struct instruction, makeInstruction("opr", 0, 6));
+    } else {
+        struct parseTree leftExpression = expectChild(tree, "expression");
+        struct parseTree rightExpression = expectLastChild(tree, "expression");
+        if (isParseTreeError(leftExpression) || isParseTreeError(rightExpression))
+            return NULL;
+
+        // Generate left expression code.
+        struct vector *leftExpressionCode = generate(leftExpression, state);
+        if (leftExpressionCode == NULL)
+            return NULL;
+        state.currentAddress += leftExpressionCode->length;
+
+        // Generate right expression code.
+        struct vector *rightExpressionCode = generate(rightExpression, state);
+        if (rightExpressionCode == NULL)
+            return NULL;
+        state.currentAddress += rightExpressionCode->length;
+
+        // Generate relational operator code.
+        struct vector *operatorCode = concatCode(tree, state, "rel-op");
+        if (operatorCode == NULL)
+            return NULL;
+
+        // Put it all together.
+        struct vector *result = makeVector(struct instruction);
+        vector_concat(result, leftExpressionCode);
+        vector_concat(result, rightExpressionCode);
+        vector_concat(result, operatorCode);
+
+        return result;
+    }
 }
 
 struct vector *generate_expression(struct parseTree tree, struct generatorState state) {
@@ -455,35 +500,6 @@ struct vector *generate_identifier(struct parseTree tree, struct generatorState 
     return result;
 }
 
-/*struct vector *generate_expression(struct parseTree tree, struct generatorState state) {
-    struct parseTree number = getChild(tree, "number");
-    if (number.name != NULL && number.children != NULL && number.children->length >= 1) {
-        char *numberString = get(struct parseTree, number.children, 0).name;
-        int value = atoi(numberString);
-
-        struct vector *result = makeVector(struct instruction);
-        struct instruction literalInstruction = makeInstruction("lit", 0, value);
-        push(result, literalInstruction);
-
-        return result;
-    }
-
-    struct parseTree identifier = getChild(tree, "identifier");
-    if (identifier.name != NULL && identifier.children != NULL && identifier.children->length >= 1) {
-        char *name = get(struct parseTree, identifier.children, 0).name;
-        struct symbol symbol = getSymbol(state, name);
-
-        struct vector *result = makeVector(struct instruction);
-        struct instruction loadInstruction = makeInstruction("lod", symbol.level, symbol.address);
-        push(result, loadInstruction);
-
-        return result;
-    }
-
-    setGeneratorError("Expected number or identifier inside expression.");
-    return NULL;
-}*/
-
 struct vector *generate_relationalOperator(struct parseTree tree, struct generatorState state) {
     if (tree.children == NULL || tree.children->length < 1) {
         setGeneratorError("Expected a relation operator (such as =, <, <=, tec.) after rel-op.");
@@ -526,7 +542,9 @@ struct instruction makeInstruction(char *instruction, int lexicalLevel, int modi
     return (struct instruction){getOpcode(instruction), instruction, lexicalLevel, modifier};
 }
 
-struct symbol addVariable(struct generatorState state, char *name, int address) {
+struct symbol addVariable(struct generatorState state, char *name) {
+    // Use it's position in the symbol table as the address.
+    int address = state.symbols->length;
     struct symbol symbol = {name, VARIABLE, state.currentLevel, address, 0};
     push(state.symbols, symbol);
     return symbol;
@@ -546,6 +564,10 @@ struct symbol getSymbol(struct generatorState state, char *name) {
     }
 
     return (struct symbol){NULL, 0, 0};
+}
+// Returns true if the given symbol represents an error in getSymbol.
+int isSymbolError(struct symbol symbol) {
+    return (symbol.name == NULL);
 }
 
 char *generator_error = "";
