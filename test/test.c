@@ -133,13 +133,13 @@ void testParser() {
     addRule(grammar, "vars", "var");
     addRule(grammar, "var", "identifier");
 
-    addRule(grammar, "statement", "begin-block");
+    addRule(grammar, "statement", "read-statement");
+    addRule(grammar, "statement", "write-statement");
     addRule(grammar, "statement", "assignment");
     addRule(grammar, "statement", "if-statement");
     addRule(grammar, "statement", "while-statement");
-    addRule(grammar, "statement", "read-statement");
-    addRule(grammar, "statement", "write-statement");
-    addRule(grammar, "statement", "nothing");
+    addRule(grammar, "statement", "begin-block");
+    //addRule(grammar, "statement", "nothing");
 
     addRule(grammar, "assignment", "identifier becomessym expression");
 
@@ -215,7 +215,8 @@ void testParser() {
     assert(lexemes != NULL);
     tree = parseProgram(lexemes, grammar);
     assert(tree.name != NULL);
-    //printParseTree(tree);
+    printParseTree(tree);
+    printf("error: %s\n", getParserError());
     // TODO: Write giant parse tree to test this program.
 }
 

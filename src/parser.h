@@ -51,4 +51,7 @@ struct parseTree getLastChild(struct parseTree parent, char *childName);
 // list of other variables and terminals that the variable should produce.
 void addRule(struct grammar grammar, char *variable, char *productionString);
 
+char *setParserError(char *message);
+char *getParserError();
+
 #endif
