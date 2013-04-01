@@ -43,25 +43,30 @@ struct parseTree parse(struct vector *lexemes, int index, char *currentVariable,
         if (strcmp(rule.variable, currentVariable) == 0) {
             struct parseTree result = parseRule(rule, lexemes, index, currentVariable, grammar);
             push(children, result);
-            if (!isParseTreeError(result)) {
+            if (0 && !isParseTreeError(result)) {
                 // Return on the first production rule that succeeds.
                 return result;
             } else {
                 if (expected == NULL)
-                    expected = rule.variable;
+                    expected = get(char*, rule.production, 0);
                 else
-                    expected = format("%s or %s", expected, rule.variable);
+                    expected = format("%s or %s", expected, get(char*, rule.production, 0));
             }
         }
     }
 
     // If we didn't find any production rules that succeeded.
-    if (expected == NULL)
-        return errorTree(format("No rules found for variable %s.",
-                    currentVariable), children);
-    else
-        return errorTree(format("Expected %s starting at '%s'.",
-                    expected, currentLexeme.token), children);
+    if (expected == NULL) {
+        setParserError(format("No rules found for variable %s.",
+                    currentVariable));
+    } else {
+        setParserError(format("Expected %s starting at '%s'.",
+                    expected, currentLexeme.token));
+    }
+
+    //return errorTree(getParserError(), children);
+    return errorTree(currentVariable, children);
+    //return (struct parseTree){currentVariable, children, 0};
 }
 
 struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
@@ -109,6 +114,7 @@ struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
             if (isParseTreeError(child)) {
                 return errorTree(format("Expected '%s' starting at '%s' while parsing %s.",
                             varOrTerminal, currentLexeme.token, currentVariable), children);
+                //return (struct parseTree){currentVariable, children, index - startIndex};
             }
         }
     }
