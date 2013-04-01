@@ -1,0 +1,10 @@
+const a = 5, b = 10;
+int x, y, z;
+begin
+    read x;
+    read y;
+    x := x + y*a;
+    y:=(y+x)*b;
+    z := 1 * 2 + x * y;
+    write z
+end.
