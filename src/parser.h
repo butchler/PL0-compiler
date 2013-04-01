@@ -45,10 +45,23 @@ int getTokenType(char *token);
 struct parseTree getChild(struct parseTree parent, char *childName);
 // Returns the last child of the given parseTree that has the given name.
 struct parseTree getLastChild(struct parseTree parent, char *childName);
+struct parseTree getFirstChild(struct parseTree parent);
+int hasChild(struct parseTree parent, char *childName);
+
+// If the given parse tree has a single child node, return the name of that
+// child. Because leaf nodes represent tokens, this can be used to get the
+// value of a token.
+char *getToken(struct parseTree parent);
 
 // Add a production rule to the given grammar. The production rule maps from
 // variable -> productionString, where production string is a space-separated
 // list of other variables and terminals that the variable should produce.
 void addRule(struct grammar grammar, char *variable, char *productionString);
+
+// Recursively free a parse tree and all of its children.
+void freeParseTree(struct parseTree tree);
+
+char *setParserError(char *message);
+char *getParserError();
 
 #endif

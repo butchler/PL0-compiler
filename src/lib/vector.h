@@ -72,4 +72,15 @@ void vector_resize(struct vector *vector, int newCapacity);
 struct vector *vector_concat(struct vector *toVector, struct vector *fromVector);
 void vector_free(struct vector *vector);
 
+// Experimental:
+int vector_find(struct vector *vector, void *value);
+#define forVector(vector, indexVariable, type, itemVariable, ...) {\
+    int indexVariable;\
+    for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
+        type itemVariable = get(type, vector, indexVariable);\
+        __VA_ARGS__\
+    }\
+}
+#define make(type) (type*)malloc(sizeof (type))
+
 #endif
