@@ -3,25 +3,30 @@
 #include "src/lib/util.h"
 #include <string.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
 struct parseTree parseProgram(struct vector *lexemes, struct grammar grammar) {
     struct parseTree result = parse(lexemes, 0, "program", grammar);
+    assert(!(result.numTokens > lexemes->length));   // This should never happen.
     if (result.numTokens == lexemes->length)
         return result;
     else {
         struct vector *children = makeVector(struct parseTree);
         push(children, result);
-        return errorTree("Could not parse all tokens.", children);
+        /*struct lexeme lastLexeme = get(struct lexeme, lexemes, result.numTokens - 1);
+        return errorTree(format("Trailing tokens after program, starting at '%s'.",
+                    lastLexeme.token), children);*/
+        return errorTree("Trailing tokens after program.", children);
     }
 }
 
 struct parseTree parse(struct vector *lexemes, int index, char *currentVariable, struct grammar grammar) {
-    if (index >= lexemes->length)
-        return errorTree(format("Reached end of input while parsing variable '%s'.",
-                    currentVariable), NULL);
+    if (index >= lexemes->length) {
+        setParserError(format("Expected %s but got end of file.",
+                    currentVariable));
+        return errorTree(getParserError(), NULL);
+    }
 
     struct lexeme currentLexeme = get(struct lexeme, lexemes, index);
 
@@ -75,9 +80,11 @@ struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
         if (strcmp(varOrTerminal, "nothing") == 0)
             continue;
 
-        if (index >= lexemes->length)
-            return errorTree(format("Reached end of input while parsing variable '%s'.",
-                        currentVariable), children);
+        if (index >= lexemes->length) {
+            setParserError(format("Expected '%s' but got end of file while parsing %s.",
+                    varOrTerminal, currentVariable));
+            return errorTree(getParserError(), children);
+        }
 
         struct lexeme currentLexeme = get(struct lexeme, lexemes, index);
 
@@ -89,8 +96,9 @@ struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
                 pushLiteral(children, struct parseTree, {currentLexeme.token, NULL, 1});
                 index += 1;
             } else {
-                return errorTree(format("Expected %s but got '%s'.",
-                            varOrTerminal, currentLexeme.token), children);
+                setParserError(format("Expected '%s' but got '%s' while parsing %s.",
+                        varOrTerminal, currentLexeme.token, currentVariable));
+                return errorTree(getParserError(), children);
             }
         } else {
             // Add child and go to token after child's tokens.
@@ -99,8 +107,8 @@ struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
             index += child.numTokens;
 
             if (isParseTreeError(child)) {
-                return errorTree(format("Expected %s starting at '%s'.",
-                            varOrTerminal, currentLexeme.token), children);
+                return errorTree(format("Expected '%s' starting at '%s' while parsing %s.",
+                            varOrTerminal, currentLexeme.token, currentVariable), children);
             }
         }
     }
@@ -210,5 +218,15 @@ void freeParseTree(struct parseTree tree) {
                 freeParseTree(child););
         freeVector(tree.children);
     }
+}
+
+char *parserError = NULL;
+
+char *setParserError(char *message) {
+    parserError = message;
+}
+
+char *getParserError() {
+    return parserError;
 }
 

@@ -61,4 +61,7 @@ void addRule(struct grammar grammar, char *variable, char *productionString);
 // Recursively free a parse tree and all of its children.
 void freeParseTree(struct parseTree tree);
 
+char *setParserError(char *message);
+char *getParserError();
+
 #endif

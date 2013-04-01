@@ -133,12 +133,12 @@ void testParser() {
     addRule(grammar, "vars", "var");
     addRule(grammar, "var", "identifier");
 
-    addRule(grammar, "statement", "begin-block");
+    addRule(grammar, "statement", "read-statement");
+    addRule(grammar, "statement", "write-statement");
     addRule(grammar, "statement", "assignment");
     addRule(grammar, "statement", "if-statement");
     addRule(grammar, "statement", "while-statement");
-    addRule(grammar, "statement", "read-statement");
-    addRule(grammar, "statement", "write-statement");
+    addRule(grammar, "statement", "begin-block");
     //addRule(grammar, "statement", "nothing");
 
     addRule(grammar, "assignment", "identifier becomessym expression");
