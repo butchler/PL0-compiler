@@ -81,5 +81,6 @@ int vector_find(struct vector *vector, void *value);
         __VA_ARGS__\
     }\
 }
+#define make(type) (type*)malloc(sizeof (type))
 
 #endif

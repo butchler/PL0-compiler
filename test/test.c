@@ -139,7 +139,7 @@ void testParser() {
     addRule(grammar, "statement", "while-statement");
     addRule(grammar, "statement", "read-statement");
     addRule(grammar, "statement", "write-statement");
-    addRule(grammar, "statement", "nothing");
+    //addRule(grammar, "statement", "nothing");
 
     addRule(grammar, "assignment", "identifier becomessym expression");
 
@@ -224,40 +224,21 @@ void testCodeGenerator() {
         // Create a parse tree that represents the following piece of PL/0 code
         // and pass it to the code generator:
         //
+        // const y = 3;
         // int x;
         // begin
         //     read x
-        //     if x = 0 then
+        //     if x = y then
         //         write x
         // end.
-        /*struct parseTree tree = pt(program
-                (block
-                    (var-declaration
-                        (identifiers
-                            (identifier x)))
-                    (statement
-                        (begin-block
-                            (statements
-                                (statement
-                                    (read-statement
-                                        (identifier x)))
-                                (statements
-                                    (statement
-                                        (if-statement
-                                            (condition
-                                                (expression
-                                                    (term (factor (identifier x))))
-                                                (rel-op =)
-                                                (expression
-                                                    (term (factor (sign) (number 0)))))
-                                            (statement
-                                                (write-statement
-                                                    (identifier x)))))))))));*/
         struct parseTree tree = pt(program
                 (block
                     (var-declaration
                         (vars
                             (var (identifier x))))
+                    (const-declaration
+                        (constants
+                            (constant (identifier y) (number 3))))
                     (statement
                         (begin-block
                             (statements
@@ -272,25 +253,21 @@ void testCodeGenerator() {
                                                     (term (factor (identifier x))))
                                                 (rel-op =)
                                                 (expression
-                                                    (term (factor (sign) (number 0)))))
+                                                    (term (factor (identifier y)))))
                                             (statement
                                                 (write-statement
                                                     (identifier x)))))))))));
 
-        // TODO: Fix this parse tree to align with new grammar.
-        printParseTree(tree);
-        
         struct vector *instructions = generateInstructions(tree);
-        if (instructions == NULL)
-            puts(getGeneratorError());
+        if (generatorHasErrors())
+            printGeneratorErrors();
         assert(instructions != NULL);
-        printInstructions(instructions);
         assert(instructionsEqual(instructions,
                     " inc 0 1"   // Reserve space for int x
                     " sio 0 2"   // Read onto stack
                     " sto 0 0"   // Store read value in x
                     " lod 0 0"   // Load x onto stack
-                    " lit 0 0"   // Push a 0 onto stack
+                    " lit 0 3"   // Push the value of y onto stack
                     " opr 0 8"   // Check for equality
                     " jpc 0 9"   // Jump to after if statement if comparison
                                  // was false
@@ -331,8 +308,8 @@ void testCodeGenerator() {
             struct parseTree tree = parse(lexemes, 0, "expression", grammar);
             // Generate code.
             struct vector *instructions = generateInstructions(tree);
-            if (instructions == NULL)
-                puts(getGeneratorError());
+            if (generatorHasErrors())
+                printGeneratorErrors();
             assert(instructions != NULL);
             // Test generated code.
             return instructionsEqual(instructions, expectedInstructions);

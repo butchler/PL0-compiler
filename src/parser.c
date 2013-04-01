@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 struct parseTree parseProgram(struct vector *lexemes, struct grammar grammar) {
     struct parseTree result = parse(lexemes, 0, "program", grammar);
@@ -151,16 +152,19 @@ int getTokenType(char *token) {
 }
 
 struct parseTree getChild(struct parseTree parent, char *childName) {
+    assert(parent.children != NULL);
+
     forVector(parent.children, i, struct parseTree, child,
         if (strcmp(child.name, childName) == 0)
             return child;);
 
-    /*return errorTree(format("Could not find child with name '%s'.", childName),
-            parent.children);*/
-    return errorTree(NULL, NULL);
+    return errorTree(format("Could not find child with name '%s'.", childName),
+            parent.children);
 }
 
 struct parseTree getLastChild(struct parseTree parent, char *childName) {
+    assert(parent.children != NULL);
+
     int i;
     for (i = parent.children->length - 1; i >= 0; i--) {
         struct parseTree child = get(struct parseTree, parent.children, i);
@@ -168,10 +172,30 @@ struct parseTree getLastChild(struct parseTree parent, char *childName) {
             return child;
     }
 
-    /*return errorTree(format("Could not find child with name '%s'.", childName),
-            parent.children);*/
-    return errorTree(NULL, NULL);
+    return errorTree(format("Could not find child with name '%s'.", childName),
+            parent.children);
 }
+
+int hasChild(struct parseTree parent, char *childName) {
+    struct parseTree child = getChild(parent, childName);
+
+    return !isParseTreeError(child);
+}
+
+struct parseTree getFirstChild(struct parseTree tree) {
+    if (tree.children != NULL && tree.children->length > 0)
+        return get(struct parseTree, tree.children, 0);
+    else
+        return errorTree("Cannot get first child of tree with no children.",
+                tree.children);
+}
+
+char *getToken(struct parseTree parent) {
+    assert(parent.children != NULL && parent.children->length == 1);
+
+    return getFirstChild(parent).name;
+}
+
 
 void addRule(struct grammar grammar, char *variable, char *productionString) {
     struct vector *production = splitString(productionString, " ");
