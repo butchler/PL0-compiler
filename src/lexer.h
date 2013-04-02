@@ -3,6 +3,7 @@
 
 #include "src/lib/vector.h"
 #include <regex.h>
+#include <stdlib.h>
 
 #define MAX_IDENTIFIER_LENGTH 11
 #define MAX_NUMBER_LENGTH 5
@@ -21,6 +22,8 @@ enum {
    WHITESPACESYM, COMMENTSYM
 
 };
+
+extern char *TOKEN_NAMES[];
 
 struct lexeme {
 

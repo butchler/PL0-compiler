@@ -18,6 +18,16 @@
  * - Return list of lexemes.
  */
 
+char *TOKEN_NAMES[] = {
+
+   NULL, NULL, "identsym", "numbersym", "plusym", "minussym", "multsym", "slashsym",
+   "oddsym", "eqsym", "neqsym", "lessym", "leqsym", "gtrsym", "geqsym", "lparentsym",
+   "rparentsym", "commasym", "semicolonsym", "periodsym", "becomessym", "beginsym", "endsym",
+   "ifsym", "thensym", "whilesym", "dosym", "callsym", "constsym", "intsym", "procsym",
+   "writesym", "readsym", "elsesym", NULL, NULL
+
+};
+
 struct tokenDefinition {
 
     char *regexString;

@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
     char *sourceCode = readContents(argv[1]);
     assert(sourceCode != NULL);
 
+    // Print source code.
     if (verbose >= 2)
         printf("Source code:\n%s\n", sourceCode);
 
@@ -37,6 +38,22 @@ int main(int argc, char **argv) {
     struct vector *lexemes = readLexemes(sourceCode);
     assert(lexemes != NULL);
 
+    // Print tokens.
+    if (verbose >= 3) {
+        printf("Tokens:\n");
+        forVector(lexemes, i, struct lexeme, lexeme,
+                printf("%d ", lexeme.tokenType);
+                if (lexeme.tokenType == IDENTSYM || lexeme.tokenType == NUMBERSYM)
+                printf("%s ", lexeme.token););
+        printf("\n\nTokens with token names:\n");
+        forVector(lexemes, i, struct lexeme, lexeme,
+                printf("%s ", TOKEN_NAMES[lexeme.tokenType]);
+                if (lexeme.tokenType == IDENTSYM || lexeme.tokenType == NUMBERSYM)
+                printf("%s ", lexeme.token););
+        printf("\n\n");
+    }
+
+    // Parse tokens.
     struct parseTree tree = parseProgram(lexemes, grammar);
     if (isParseTreeError(tree)) {
         printf("Error while parsing program. This is what the parser was able to parse:\n");
@@ -44,12 +61,14 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (verbose >= 3) {
+    // Print parse tree.
+    if (verbose >= 4) {
         printf("Parse tree:\n");
         printParseTree(tree);
         printf("\n");
     }
 
+    // Generate code.
     struct vector *instructions = generateInstructions(tree);
     if (generatorHasErrors()) {
         printf("The generator encountered errors:\n");
@@ -61,11 +80,14 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    // Print generated code.
     assert(instructions != NULL);
     if (verbose >= 1) {
         printf("Generated instructions:\n");
+        // Print code with nice opcode names.
         printInstructions(instructions);
     } else {
+        // Print code suitable for the VM.
         forVector(instructions, i, struct instruction, instruction,
                 printf("%d %d %d\n",
                     instruction.opcode,
