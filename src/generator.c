@@ -75,19 +75,19 @@ void generate_block(struct parseTree tree, struct generatorState *state) {
 }
 
 void generate_varDeclaration(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "vars"));
+    if (hasChild(tree, "vars")) {
+        struct generatorState *fakeState = copyGeneratorState(state);
+        generate(getChild(tree, "vars"), fakeState);
+        // Each "var" node adds one instruction, so we can use that to find the
+        // number of variables.
+        int numVariables = fakeState->instructions->length - state->instructions->length;
 
-    struct generatorState *fakeState = copyGeneratorState(state);
-    generate(getChild(tree, "vars"), fakeState);
-    // Each "var" node adds one instruction, so we can use that to find the
-    // number of variables.
-    int numVariables = fakeState->instructions->length - state->instructions->length;
-
-    // Allocate space for the variables.
-    addInstruction(state, "inc", 0, numVariables);
-    // Ignore the instructions that the vars generate, but keep the symbols
-    // that they added.
-    state->symbols = fakeState->symbols;
+        // Allocate space for the variables.
+        addInstruction(state, "inc", 0, numVariables);
+        // Ignore the instructions that the vars generate, but keep the symbols
+        // that they added.
+        state->symbols = fakeState->symbols;
+    }
 }
 
 void generate_vars(struct parseTree tree, struct generatorState *state) {
@@ -109,8 +109,6 @@ void generate_var(struct parseTree tree, struct generatorState *state) {
 }
 
 void generate_constDeclaration(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "constants"));
-
     generate(getChild(tree, "constants"), state);
 }
 
