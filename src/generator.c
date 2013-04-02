@@ -189,7 +189,7 @@ void generate_whileStatement(struct parseTree tree, struct generatorState *state
 
     // Generate a fake jpc instruction first so that we can find out what
     // instruction we need to jump to.
-    int beginning = state->instructions->length - 1;
+    int beginning = state->instructions->length;
     struct generatorState *fakeState = copyGeneratorState(state);
     generate(getChild(tree, "condition"), fakeState);
     addInstruction(fakeState, "jpc", -1, -1);
