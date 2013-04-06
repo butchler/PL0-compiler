@@ -62,6 +62,20 @@ struct vector
 #define set(vector, index, item) vector_set(vector, index, (void*)(&item))
 #define get(type, vector, index) (*(type*)vector_get(vector, index))
 #define freeVector(vector) vector_free(vector)
+#define forVector(vector, indexVariable, type, itemVariable, ...) {\
+    int indexVariable;\
+    for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
+        type itemVariable = get(type, vector, indexVariable);\
+        __VA_ARGS__\
+    }\
+}
+#define forVectorPointers(vector, indexVariable, type, itemVariable, ...) {\
+    int indexVariable;\
+    for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
+        type *itemVariable = (type*)vector_get(vector, indexVariable);\
+        __VA_ARGS__\
+    }\
+}
 
 struct vector* vector_init(int itemSize);
 struct vector* vector_copy(struct vector *vector);
@@ -74,13 +88,5 @@ void vector_free(struct vector *vector);
 
 // Experimental:
 int vector_find(struct vector *vector, void *value);
-#define forVector(vector, indexVariable, type, itemVariable, ...) {\
-    int indexVariable;\
-    for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
-        type itemVariable = get(type, vector, indexVariable);\
-        __VA_ARGS__\
-    }\
-}
-#define make(type) (type*)malloc(sizeof (type))
 
 #endif

@@ -20,20 +20,13 @@ struct rule {
     struct vector *production;
 };
 
-// Wrapper for parse that stries to parse the lexemes as a "program" variable.
-// Use this instead of using parse directly.
-struct parseTree parseProgram(struct vector *lexemes, struct grammar grammar);
-
-// Parse the given lexemes, returning a parse tree.
-struct parseTree parse(struct vector *lexemes, int index, char *currentVariable, struct grammar grammar);
-
-// Try to parse a single production rule for the given variable from the grammar.
-struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
-        char *currentVariable, struct grammar grammar);
+// Parse the given lexemes using the given grammar and start variable,
+// returning a parse tree.
+struct parseTree parse(struct vector *lexemes, struct grammar grammar, char *startVariable);
 
 // Returns a parse tree that indicates an error occurred, with the given error
 // message as its name.
-struct parseTree errorTree(char *error, struct vector *children);
+struct parseTree errorTree();
 // Returns tree if the given tree is a tree that was produced by errorTree().
 int isParseTreeError(struct parseTree tree);
 
@@ -47,21 +40,16 @@ struct parseTree getChild(struct parseTree parent, char *childName);
 struct parseTree getLastChild(struct parseTree parent, char *childName);
 struct parseTree getFirstChild(struct parseTree parent);
 int hasChild(struct parseTree parent, char *childName);
-
-// If the given parse tree has a single child node, return the name of that
-// child. Because leaf nodes represent tokens, this can be used to get the
-// value of a token.
-char *getToken(struct parseTree parent);
+// Recursively free a parse tree and all of its children.
+void freeParseTree(struct parseTree tree);
 
 // Add a production rule to the given grammar. The production rule maps from
 // variable -> productionString, where production string is a space-separated
 // list of other variables and terminals that the variable should produce.
 void addRule(struct grammar grammar, char *variable, char *productionString);
 
-// Recursively free a parse tree and all of its children.
-void freeParseTree(struct parseTree tree);
-
-char *setParserError(char *message);
+//char *setParserError(char *message);
+void addParserError(char *message, int currentIndex);
 char *getParserError();
 
 #endif

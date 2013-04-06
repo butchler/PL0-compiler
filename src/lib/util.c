@@ -104,3 +104,54 @@ int isInteger(char *string) {
     return 1;
 }
 
+/*char *joinStrings(struct vector *strings, char *separator) {
+    if (strings->length == 0)
+        return "";
+    char *lastString = get(char*, strings, strings->length - 1);
+    if (strings->length == 1)
+        return lastString;
+
+    struct vector *copy = vector_copy(strings);
+    copy->length -= 1;
+
+    return format("%s%s%s", joinStrings(copy, separator), separator, lastString);
+}*/
+
+char *joinStrings(struct vector *strings, char *separator) {
+    char *join(struct vector *strings, char *separator) {
+        if (strings->length == 0)
+            return "";
+
+        char *lastString = get(char*, strings, strings->length - 1);
+        if (strings->length == 1)
+            return lastString;
+
+        // Remove the last string from strings.
+        strings->length -= 1;
+        char *firstStrings = joinStrings(strings, separator);
+
+        char *result = format("%s%s%s", firstStrings, separator, lastString);
+
+        free(firstStrings);
+    }
+
+    // join modifies the vector given to it, so make a copy so we don't modify
+    // the vector passed to joinStrings.
+    struct vector *copy = vector_copy(strings);
+
+    return join(copy, separator);
+}
+
+// Returns a new string that is a copy of the given string up to the given
+// length.
+char *substring(char *string, int length) {
+
+    char *substr = (char*)malloc(sizeof(char) * (length + 1));
+    strncpy(substr, string, length);
+    // Add null character.
+    substr[length] = '\0';
+
+    return substr;
+
+}
+

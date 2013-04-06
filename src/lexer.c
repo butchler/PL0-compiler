@@ -4,6 +4,7 @@
 #include <regex.h>
 #include <assert.h>
 #include "src/lib/vector.h"
+#include "src/lib/util.h"
 #include "src/lexer.h"
 
 /* Algorithm outline:
@@ -18,201 +19,183 @@
  * - Return list of lexemes.
  */
 
-struct tokenDefinition {
-
-    char *regexString;
-    int tokenType;
-    regex_t *regex;
-
-};
-
 // Regexes that match each token type, along with the token type that they map
 // to. The regexes are compiled with REG_EXTENDED (they are interpreted as
 // POSIX extended regular expressions).
 struct tokenDefinition tokenDefinitions[] = {
 
     // Whitespace
-    {"\\s+", WHITESPACESYM, NULL},
+    {"\\s+", "whitespace"},
     // The comment regex is based off of http://ostermiller.org/findcomment.html
     // [*] matches a single * character, and looks slightely nicer than \\*
     // (\\* instead of \* because it needs to be escaped twice: once for the C
     // string and another time for the regex.)
-    {"/[*]([^*]|[*]+[^*/])*[*]+/", COMMENTSYM, NULL},
+    {"/[*]([^*]|[*]+[^*/])*[*]+/", "comment"},
     // Keywords
     // \\b = \b and matches the empty string, but only along a word boundary,
     // where words anything that contains [a-zA-Z0-9_].
-    {"begin\\b", BEGINSYM, NULL},
-    {"while\\b", WHILESYM, NULL},
-    {"const\\b", CONSTSYM, NULL},
-    {"write\\b", WRITESYM, NULL},
-    {"call\\b", CALLSYM, NULL},
-    {"then\\b", THENSYM, NULL},
-    {"procedure\\b", PROCSYM, NULL},
-    {"read\\b", READSYM, NULL},
-    {"else\\b", ELSESYM, NULL},
-    {"odd\\b", ODDSYM, NULL},
-    {"end\\b", ENDSYM, NULL},
-    {"int\\b", INTSYM, NULL},
-    {"if\\b", IFSYM, NULL},
-    {"do\\b", DOSYM, NULL},
+    {"begin\\b", "begin"},
+    {"while\\b", "while"},
+    {"const\\b", "const"},
+    {"write\\b", "write"},
+    {"call\\b", "call"},
+    {"then\\b", "then"},
+    {"procedure\\b", "procedure"},
+    {"read\\b", "read"},
+    {"else\\b", "else"},
+    {"odd\\b", "odd"},
+    {"end\\b", "end"},
+    {"int\\b", "int"},
+    {"if\\b", "if"},
+    {"do\\b", "do"},
     // Identifiers
-    {"[a-zA-Z]\\w*", IDENTSYM, NULL},
+    {"[a-zA-Z]\\w*", "identsym"},
     // Numbers
-    {"[0-9]+", NUMBERSYM, NULL},
+    {"[0-9]+", "numbersym"},
     // Special symbols
-    {">=", GEQSYM, NULL},
-    {"<=", LEQSYM, NULL},
-    {"<>", NEQSYM, NULL},
-    {":=", BECOMESSYM, NULL},
-    {"[+]", PLUSSYM, NULL},
-    {"-", MINUSSYM, NULL},
-    {"[*]", MULTSYM, NULL},
-    {"/", SLASHSYM, NULL},
-    {"=", EQSYM, NULL},
-    {"<", LESSYM, NULL},
-    {">", GTRSYM, NULL},
-    {"[(]", LPARENTSYM, NULL},
-    {"[)]", RPARENTSYM, NULL},
-    {",", COMMASYM, NULL},
-    {";", SEMICOLONSYM, NULL},
-    {"[.]", PERIODSYM, NULL},
+    {">=", ">="},
+    {"<=", "<="},
+    {"<>", "<>"},
+    {":=", ":="},
+    {"[+]", "+"},
+    {"-", "-"},
+    {"[*]", "*"},
+    {"/", "/"},
+    {"=", "="},
+    {"<", "<"},
+    {">", ">"},
+    {"[(]", "("},
+    {"[)]", ")"},
+    {",", ","},
+    {";", ";"},
+    {"[.]", "."},
     // Indicates the end of token definitions.
-    {NULL, 0, NULL}
+    {NULL, NULL}
 
 };
 
-// Compile all of the regexes in tokenDefinitions.
-void initLexer() {
+struct vector *readLexemes(char *source, struct vector *tokenDefinitions) {
+    // Reset lexer errors.
+    extern struct vector *lexerErrors;
+    lexerErrors = NULL;
 
-    int i;
-    for (i = 0; tokenDefinitions[i].regexString != NULL; i++) {
+    initRegexes(tokenDefinitions);
 
-        // Prepend ^ to all of the regexes so that it only matches tokens at the
-        // current position in the source code.
-        char *regexString = (char*)malloc(sizeof(char) * (1 + strlen(tokenDefinitions[i].regexString)));
-        regexString[0] = '^';
-        strcpy(regexString + 1, tokenDefinitions[i].regexString);
-        tokenDefinitions[i].regex = (regex_t*)malloc(sizeof(regex_t));
-        int error = regcomp(tokenDefinitions[i].regex, regexString, REG_EXTENDED);
-        free(regexString);
+    // Keep on trying to read lexemes and adding them to the list of lexemes
+    // until we hit the end of the string.
+    char *currentPosition = source;
+    struct vector *lexemes = makeVector(struct lexeme);
 
-        // TODO: add getLexerError() function
-        /*if (error != 0) {
+    while (*currentPosition != '\0') {
+        struct lexeme lexeme = readLexeme(currentPosition, tokenDefinitions);
 
-          int errorStringLength = 1000;
-          char *errorString = (char*)malloc(sizeof(char) * errorStringLength);
-          regerror(error, tokenDefinitions[i].regex, errorString, errorStringLength);
-          printError("Error compiling regex '%s': %s", tokenDefinitions[i].regexString, errorString);
-          free(errorString);
+        if (lexeme.token == NULL) {
+            push(lexemes, lexeme);
+            currentPosition += strlen(lexeme.token);
+        } else {
+            addLexerError(format("Unrecognized token starting at '%.10s...'.",
+                        currentPosition));
 
-          }*/
-
-    }
-
-}
-
-struct vector *readLexemes(char *source) {
-
-    int i = 0;
-    struct vector *lexemes = vector_init(sizeof(struct lexeme));
-
-    while (source[i] != '\0') {
-
-        struct lexeme lexeme = readLexeme(&source[i]);
-
-        if (lexeme.token != NULL) {
-
-            if (lexeme.tokenType != WHITESPACESYM && lexeme.tokenType != COMMENTSYM)
-                vector_push(lexemes, &lexeme);
-
-            i += strlen(lexeme.token);
-
+            // If we hit an unrecognized token, just move ahead one character
+            // and keep on trying.
+            currentPosition += 1;
         }
-        else {
-
-            // TODO: add getLexerError() function
-            //printError("Unrecognized symbol starting at '%.10s...'.", &source[i]);
-
-            i += 1;
-
-        }
-
     }
 
     return lexemes;
+}
+
+void initRegexes(struct vector *tokenDefinitions) {
+
+    // For each token definition.
+    forVectorPointers(tokenDefinitions, i, struct tokenDefinition, tokenDef,
+        // Prepend ^ to all of the regexes so that it only matches tokens at the
+        // current position in the source code.
+        char *regexString = format("^%s", tokenDef->regexString);
+
+        // Compile the regex.
+        tokenDef->regex = (regex_t*)malloc(sizeof (regex_t));
+        int error = regcomp(tokenDef->regex, regexString, REG_EXTENDED);
+
+        // Check for errors.
+        if (error != 0) {
+            char *errorString = getRegexError(error, tokenDef->regex);
+            addLexerError(format("Error compiling regex '%s': %s",
+                        regexString, errorString));
+            free(errorString);
+        }
+
+        free(regexString););
 
 }
 
-struct lexeme readLexeme(char *source) {
+struct lexeme readLexeme(char *source, struct vector *tokenDefinitions) {
+    // Try matching the regexes of every token definiton.
+    forVector(tokenDefinitions, i, struct tokenDefinition, tokenDef,
+        char *match = getMatch(tokenDef.regex, source);
 
-    int i;
-    for (i = 0; tokenDefinitions[i].regexString != NULL; i++) {
-
-        struct tokenDefinition definition = tokenDefinitions[i];
-
-        char *match = getMatch(definition.regex, source);
-
+        // Return the first successful match.
         if (match != NULL)
-            return (struct lexeme){definition.tokenType, match};
+            return (struct lexeme){tokenDef.tokenType, match};);
 
-    }
-
-    return (struct lexeme){0, NULL};
-
-}
-
-// Returns a new string that is a copy of the given string up to the given
-// length.
-char *substring(char *string, int length) {
-
-    char *substr = (char*)malloc(sizeof(char) * (length + 1));
-    strncpy(substr, string, length);
-    // Add null character.
-    substr[length] = '\0';
-
-    return substr;
-
+    return (struct lexeme){NULL, NULL};
 }
 
 char *getMatch(regex_t *regex, char *string) {
+    regmatch_t match;
+    // Using the regex 'regex', search in the string 'string' for 1 match, and
+    // store the result in regmatch_t match, and don't pass any special flags.
+    int error = regexec(regex, string, 1, &match, 0);
 
-    regmatch_t matches[1];
-    int error = regexec(regex, string, 1, matches, 0);
-
+    // The regex couldn't find any matches.
     if (error == REG_NOMATCH)
         return NULL;
 
-    // TODO: add getLexerError() function
-    /*if (error != 0) {
+    // Check for errors.
+    if (error != 0) {
 
-      int errorStringLength = 1000;
-      char *errorString = (char*)malloc(sizeof(char) * errorStringLength);
-      regerror(error, regex, errorString, errorStringLength);
-      printError("Error executing regex: %s", errorString);
-      free(errorString);
-
-      }*/
-
-    // matches[0] holds the indices of what the overall regex matched.
-    regmatch_t tokenMatch = matches[0];
-
-    int matchStart = tokenMatch.rm_so;
-    int matchEnd = tokenMatch.rm_eo;
-
-    if (matchStart >= 0) {
-
-        int tokenLength = matchEnd - matchStart;
-        if (tokenLength > 0) {
-
-            char *token = substring(&string[matchStart], tokenLength);
-
-            return token;
-
-        }
+        char *errorString = getRegexError(error, regex);
+        addLexerError(format("Error executing regex: %s", errorString));
+        free(errorString);
 
     }
 
-    return NULL;
+    // Extract and return the first match.
+    int matchStart = match.rm_so;
+    int matchEnd = match.rm_eo;
+    int tokenLength = matchEnd - matchStart;
 
+    if (matchStart >= 0 && tokenLength > 0) {
+        char *result = substring(&string[matchStart], tokenLength);
+
+        return result;
+    }
+
+    return NULL;
+}
+
+char *getRegexError(int error, regex_t *regex) {
+    // Reserve 100 characters for the error message.
+    int errorStringLength = 100;
+    char *errorString = (char*)malloc(sizeof(char) * errorStringLength);
+    regerror(error, regex, errorString, errorStringLength);
+
+    return errorString;
+}
+
+struct vector *lexerErrors = NULL;
+
+void addLexerError(char *message) {
+    if (lexerErrors == NULL)
+        lexerErrors = makeVector(char*);
+
+    push(lexerErrors, message);
+}
+
+char *getLexerErrors() {
+    if (lexerErrors == NULL)
+        return NULL;
+
+    return joinStrings(lexerErrors, "\n");
 }
 

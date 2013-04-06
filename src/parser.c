@@ -6,163 +6,115 @@
 #include <stdlib.h>
 #include <assert.h>
 
-struct parseTree parseProgram(struct vector *lexemes, struct grammar grammar) {
-    struct parseTree result = parse(lexemes, 0, "program", grammar);
-    assert(!(result.numTokens > lexemes->length));   // This should never happen.
-    if (result.numTokens == lexemes->length)
-        return result;
-    else {
+// Nested functions defined inside parse().
+struct parseTree parseVariable(int index, char *currentVariable);
+struct parseTree parseRule(struct rule rule, int index);
+int isVariable(char *string);
+
+struct parseTree parse(struct vector *lexemes, struct grammar grammar,
+        char *startVariable) {
+    // Reset parser errors.
+    extern struct vector *parserErrors;
+    extern int maxIndex;
+    parserErrors = NULL;
+    maxIndex = 0;
+
+    return parseVariable(0, startVariable);
+
+    // Try to parse the given variable starting at the given index in the
+    // lexeme list.
+    struct parseTree parseVariable(int index, char *currentVariable) {
+        // For each production rule in the grammar.
+        forVector(grammar.rules, i, struct rule, rule,
+                // If it's a production rule for the current variable.
+                if (strcmp(rule.variable, currentVariable) == 0) {
+                    // Try to parse the production rule.
+                    struct parseTree result = parseRule(rule, index);
+
+                    // Return on the first production rule that succeeds.
+                    if (!isParseTreeError(result))
+                        return result;
+                });
+
+        // If none of the rules we found worked, or we didn't find any rules,
+        // return an error.
+        return errorTree();
+    }
+
+    // Try to parse the given production rule at the f
+    struct parseTree parseRule(struct rule rule, int index) {
+        int startIndex = index;
         struct vector *children = makeVector(struct parseTree);
-        push(children, result);
-        /*struct lexeme lastLexeme = get(struct lexeme, lexemes, result.numTokens - 1);
-        return errorTree(format("Trailing tokens after program, starting at '%s'.",
-                    lastLexeme.token), children);*/
-        return errorTree("Trailing tokens after program.", children);
+
+        // For each variable and terminal in the production rule.
+        forVector(rule.production, i, char*, varOrTerminal,
+            // Special case for the the empty string, which is represented as
+            // "nothing" inside of production rules. Just accept it without
+            // moving to the next token.
+            if (strcmp(varOrTerminal, "nothing") == 0)
+                continue;
+
+            // Return an error if we hit end of input before parsing is done.
+            if (index >= lexemes->length) {
+                    addParserError(
+                        format("Expected '%s' but got end of input while parsing %s.",
+                            varOrTerminal, rule.variable),
+                        index);
+                    // TODO: Free children before return.
+                    return errorTree();
+            }
+
+            if (isVariable(varOrTerminal)) {
+                // Try to parse the variable, and if it matches, go to the next
+                // token after all of the tokens that the variable matched. If
+                // it doesn't match, return an error.
+                char *variableName = varOrTerminal;
+
+                struct parseTree child = parseVariable(index, variableName);
+                if (isParseTreeError(child))
+                    return errorTree();
+
+                push(children, child);
+                index += child.numTokens;
+            } else /* varOrTerminal is a terminal */ {
+                // If the current token is the same type as the token that the
+                // production rule expects, add it to the parse tree and go to
+                // the next token. Otherwise, return an error.
+                char *tokenType = varOrTerminal;
+                struct lexeme currentLexeme = get(struct lexeme, lexemes, index);
+
+                if (strcmp(currentLexeme.tokenType, tokenType) == 0) {
+                    pushLiteral(children, struct parseTree, {currentLexeme.token, NULL, 1});
+                    index += 1;
+                } else {
+                    addParserError(
+                        format("Expected '%s' but got '%s' while parsing %s.",
+                            varOrTerminal, currentLexeme.token, rule.variable),
+                        index);
+                    // TODO: Free children before return.
+                    return errorTree();
+                }
+            });
+
+        int numTokens = index - startIndex;
+        return (struct parseTree){rule.variable, children, numTokens};
+    }
+
+    int isVariable(char *string) {
+        forVector(grammar.rules, i, struct rule, rule,
+                if (strcmp(rule.variable, string) == 0)
+                    return 1;);
+
+        return 0;
     }
 }
 
-struct parseTree parse(struct vector *lexemes, int index, char *currentVariable, struct grammar grammar) {
-    if (index >= lexemes->length) {
-        setParserError(format("Expected %s but got end of file.",
-                    currentVariable));
-        return errorTree(getParserError(), NULL);
-    }
-
-    struct lexeme currentLexeme = get(struct lexeme, lexemes, index);
-
-    struct vector *children = makeVector(struct parseTree);
-    // Holds a list of what variables or terminals we expected to find, if we
-    // can't find any matches.
-    char *expected = NULL;
-
-    // For each production rule in the grammar.
-    int i;
-    for (i = 0; i < grammar.rules->length; i++) {
-        struct rule rule = get(struct rule, grammar.rules, i);
-        // If it's a production rule for the current variable.
-        if (strcmp(rule.variable, currentVariable) == 0) {
-            struct parseTree result = parseRule(rule, lexemes, index, currentVariable, grammar);
-            push(children, result);
-            if (0 && !isParseTreeError(result)) {
-                // Return on the first production rule that succeeds.
-                return result;
-            } else {
-                if (expected == NULL)
-                    expected = get(char*, rule.production, 0);
-                else
-                    expected = format("%s or %s", expected, get(char*, rule.production, 0));
-            }
-        }
-    }
-
-    // If we didn't find any production rules that succeeded.
-    if (expected == NULL) {
-        setParserError(format("No rules found for variable %s.",
-                    currentVariable));
-    } else {
-        setParserError(format("Expected %s starting at '%s'.",
-                    expected, currentLexeme.token));
-    }
-
-    //return errorTree(getParserError(), children);
-    return errorTree(currentVariable, children);
-    //return (struct parseTree){currentVariable, children, 0};
-}
-
-struct parseTree parseRule(struct rule rule, struct vector *lexemes, int index,
-        char *currentVariable, struct grammar grammar) {
-    int startIndex = index;
-    struct vector *children = makeVector(struct parseTree);
-
-    // For each variable and terminal in the production rule.
-    int i;
-    for (i = 0; i < rule.production->length; i++) {
-        char *varOrTerminal = get(char*, rule.production, i);
-
-        // Special case for the the empty string, which is represented as
-        // "nothing" inside of production rules. Just accept it without
-        // increasing the index.
-        if (strcmp(varOrTerminal, "nothing") == 0)
-            continue;
-
-        if (index >= lexemes->length) {
-            setParserError(format("Expected '%s' but got end of file while parsing %s.",
-                    varOrTerminal, currentVariable));
-            return errorTree(getParserError(), children);
-        }
-
-        struct lexeme currentLexeme = get(struct lexeme, lexemes, index);
-
-        int tokenType = getTokenType(varOrTerminal);
-        int isTerminal = (tokenType > 0);
-        if (isTerminal) {
-            if (tokenType == currentLexeme.tokenType) {
-                // Go to next token if this token matches the terminal.
-                pushLiteral(children, struct parseTree, {currentLexeme.token, NULL, 1});
-                index += 1;
-            } else {
-                setParserError(format("Expected '%s' but got '%s' while parsing %s.",
-                        varOrTerminal, currentLexeme.token, currentVariable));
-                return errorTree(getParserError(), children);
-            }
-        } else {
-            // Add child and go to token after child's tokens.
-            struct parseTree child = parse(lexemes, index, varOrTerminal, grammar);
-            push(children, child);
-            index += child.numTokens;
-
-            if (isParseTreeError(child)) {
-                return errorTree(format("Expected '%s' starting at '%s' while parsing %s.",
-                            varOrTerminal, currentLexeme.token, currentVariable), children);
-                //return (struct parseTree){currentVariable, children, index - startIndex};
-            }
-        }
-    }
-
-    int numTokens = index - startIndex;
-    return (struct parseTree){currentVariable, children, numTokens};
-}
-
-struct parseTree errorTree(char *error, struct vector *children) {
-    return (struct parseTree){error, children, -1};
+struct parseTree errorTree() {
+    return (struct parseTree){NULL, NULL, -1};
 }
 
 int isParseTreeError(struct parseTree tree) {
     return (tree.numTokens < 0);
-}
-
-int getTokenType(char *token) {
-    if (strcmp(token, "intsym") == 0) return INTSYM;
-    if (strcmp(token, "semicolonsym") == 0) return SEMICOLONSYM;
-    if (strcmp(token, "beginsym") == 0) return BEGINSYM;
-    if (strcmp(token, "endsym") == 0) return ENDSYM;
-    if (strcmp(token, "readsym") == 0) return READSYM;
-    if (strcmp(token, "writesym") == 0) return WRITESYM;
-    if (strcmp(token, "periodsym") == 0) return PERIODSYM;
-    if (strcmp(token, "commasym") == 0) return COMMASYM;
-    if (strcmp(token, "lparentsym") == 0) return LPARENTSYM;
-    if (strcmp(token, "rparentsym") == 0) return RPARENTSYM;
-    if (strcmp(token, "plussym") == 0) return PLUSSYM;
-    if (strcmp(token, "minussym") == 0) return MINUSSYM;
-    if (strcmp(token, "multsym") == 0) return MULTSYM;
-    if (strcmp(token, "slashsym") == 0) return SLASHSYM;
-    if (strcmp(token, "eqsym") == 0) return EQSYM;
-    if (strcmp(token, "neqsym") == 0) return NEQSYM;
-    if (strcmp(token, "lessym") == 0) return LESSYM;
-    if (strcmp(token, "leqsym") == 0) return LEQSYM;
-    if (strcmp(token, "gtrsym") == 0) return GTRSYM;
-    if (strcmp(token, "geqsym") == 0) return GEQSYM;
-    if (strcmp(token, "oddsym") == 0) return ODDSYM;
-    if (strcmp(token, "constsym") == 0) return CONSTSYM;
-    if (strcmp(token, "becomessym") == 0) return BECOMESSYM;
-    if (strcmp(token, "ifsym") == 0) return IFSYM;
-    if (strcmp(token, "thensym") == 0) return THENSYM;
-    if (strcmp(token, "whilesym") == 0) return WHILESYM;
-    if (strcmp(token, "dosym") == 0) return DOSYM;
-    if (strcmp(token, "identsym") == 0) return IDENTSYM;
-    if (strcmp(token, "numbersym") == 0) return NUMBERSYM;
-
-    return -1;
 }
 
 struct parseTree getChild(struct parseTree parent, char *childName) {
@@ -172,8 +124,7 @@ struct parseTree getChild(struct parseTree parent, char *childName) {
         if (strcmp(child.name, childName) == 0)
             return child;);
 
-    return errorTree(format("Could not find child with name '%s'.", childName),
-            parent.children);
+    return errorTree();
 }
 
 struct parseTree getLastChild(struct parseTree parent, char *childName) {
@@ -186,8 +137,7 @@ struct parseTree getLastChild(struct parseTree parent, char *childName) {
             return child;
     }
 
-    return errorTree(format("Could not find child with name '%s'.", childName),
-            parent.children);
+    return errorTree();
 }
 
 int hasChild(struct parseTree parent, char *childName) {
@@ -200,20 +150,7 @@ struct parseTree getFirstChild(struct parseTree tree) {
     if (tree.children != NULL && tree.children->length > 0)
         return get(struct parseTree, tree.children, 0);
     else
-        return errorTree("Cannot get first child of tree with no children.",
-                tree.children);
-}
-
-char *getToken(struct parseTree parent) {
-    assert(parent.children != NULL && parent.children->length == 1);
-
-    return getFirstChild(parent).name;
-}
-
-
-void addRule(struct grammar grammar, char *variable, char *productionString) {
-    struct vector *production = splitString(productionString, " ");
-    pushLiteral(grammar.rules, struct rule, {variable, production});
+        return errorTree();
 }
 
 void freeParseTree(struct parseTree tree) {
@@ -226,13 +163,31 @@ void freeParseTree(struct parseTree tree) {
     }
 }
 
-char *parserError = NULL;
+void addRule(struct grammar grammar, char *variable, char *productionString) {
+    struct vector *production = splitString(productionString, " ");
+    pushLiteral(grammar.rules, struct rule, {variable, production});
+}
 
-char *setParserError(char *message) {
-    parserError = message;
+struct vector *parserErrors = NULL;
+int maxIndex = 0;
+
+void addParserError(char *message, int currentIndex) {
+    // Only the "most successful" errors should be shown, so there is an error
+    // at a higher index in the token list, get rid of all of the previous
+    // errors.
+    if (parserErrors == NULL || currentIndex > maxIndex) {
+        maxIndex = currentIndex;
+        parserErrors = makeVector(char*);
+    }
+
+    if (currentIndex == maxIndex)
+        push(parserErrors, message);
 }
 
 char *getParserError() {
-    return parserError;
+    if (parserErrors == NULL)
+        return NULL;
+
+    return joinStrings(parserErrors, "\n");
 }
 

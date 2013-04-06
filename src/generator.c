@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 struct vector *generateInstructions(struct parseTree tree) {
+    // Reset error messages.
     extern struct vector *generatorErrors;
     generatorErrors = NULL;
 
@@ -338,7 +339,7 @@ int getOpcode(char *instruction) {
 }
 
 struct generatorState *makeGeneratorState() {
-    struct generatorState *state = make(struct generatorState);
+    struct generatorState *state = malloc(sizeof (struct generatorState));
 
     state->symbols = makeVector(struct symbol);
     state->currentLevel = 0;
@@ -347,7 +348,7 @@ struct generatorState *makeGeneratorState() {
     return state;
 }
 struct generatorState *copyGeneratorState(struct generatorState *state) {
-    struct generatorState *copy = make(struct generatorState);
+    struct generatorState *copy = malloc(sizeof (struct generatorState));
 
     copy->symbols = vector_copy(state->symbols);
     copy->currentLevel = state->currentLevel;
@@ -363,6 +364,15 @@ struct instruction makeInstruction(char *instruction, int lexicalLevel, int modi
 void addInstruction(struct generatorState *state, char *instruction, int lexicalLevel, int modifier) {
     pushLiteral(state->instructions, struct instruction,
             makeInstruction(instruction, lexicalLevel, modifier));
+}
+
+// If the given parse tree has a single child node, return the name of that
+// child. Because leaf nodes represent tokens, this can be used to get the
+// value of a token.
+char *getToken(struct parseTree parent) {
+    assert(parent.children != NULL && parent.children->length == 1);
+
+    return getFirstChild(parent).name;
 }
 
 void addLoadInstruction(struct generatorState *state, struct parseTree identifier) {

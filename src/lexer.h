@@ -7,42 +7,42 @@
 #define MAX_IDENTIFIER_LENGTH 11
 #define MAX_NUMBER_LENGTH 5
 
-enum {
+struct tokenDefinition {
 
-   NULSYM = 1, IDENTSYM, NUMBERSYM, PLUSSYM, MINUSSYM, MULTSYM, SLASHSYM,
-   ODDSYM, EQSYM, NEQSYM, LESSYM, LEQSYM, GTRSYM, GEQSYM, LPARENTSYM,
-   RPARENTSYM, COMMASYM, SEMICOLONSYM, PERIODSYM, BECOMESSYM, BEGINSYM, ENDSYM,
-   IFSYM, THENSYM, WHILESYM, DOSYM, CALLSYM, CONSTSYM, INTSYM, PROCSYM,
-   WRITESYM, READSYM, ELSESYM,
-
-   // Custom symbols used to make implementation simpler. Whitespace and
-   // comments are treated just like any other tokens, except that they are
-   // discarded from the lexeme list that is printed out.
-   WHITESPACESYM, COMMENTSYM
+    char *regexString;
+    char *tokenType;
+    regex_t *regex;
 
 };
 
+
 struct lexeme {
 
-   int tokenType;
+   char *tokenType;
    char *token;
 
 };
 
-// Call once to compile the regular expressions used by the lexer, before using
-// the other lexer functions.
-void initLexer();
+// Given a string of source code and a vector of struct tokenDefinitions,
+// return a vector of lexemes.
+struct vector *readLexemes(char *source, struct vector *tokenDefinitions);
 
-// Given a string of PL/0 source code, return a vector of lexemes representing
-// the source code.
-struct vector *readLexemes(char *source);
-// Try to read a single lexeme at the beginning of the given string of PL/0
-// source code, returning an empty lexeme (i.e. (struct lexeme){0, NULL}) if
-// there is no valid token at the beginning of the string.
-struct lexeme readLexeme(char *source);
+// Compile all of the regexes in the given tokenDefinitions.
+void initRegexes(struct vector *tokenDefinitions);
+
+// Try to read a single lexeme at the beginning of the given string of source
+// code, returning an empty lexeme (i.e. (struct lexeme){NULL, NULL}) if there
+// is no valid token at the beginning of the string.
+struct lexeme readLexeme(char *source, struct vector *tokenDefinitions);
 
 // Given a compiled regex and a string, return the first substring that matches
 // the regex, or NULL if there is no match.
 char *getMatch(regex_t *regex, char *string);
+
+// Wrapper for regerror to get human readable error message if a regex function
+// returns an error code.
+char *getRegexError(int error, regex_t *regex);
+
+void addLexerError(char *message);
 
 #endif

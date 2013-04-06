@@ -209,14 +209,15 @@ void testParser() {
                 "read y;\n"
                 "x := x + y*a;\n"
                 "y:=(y+x)*b;\n"
-                "z = x + y;\n"
+                "z := x * y;\n"
                 "write z\n"
             "end.\n");
     assert(lexemes != NULL);
     tree = parseProgram(lexemes, grammar);
     assert(tree.name != NULL);
     printParseTree(tree);
-    printf("Error: %s\n", getParserError());
+    if (isParseTreeError(tree))
+        printf("Parser had errors:\n%s\n", getParserError());
     // TODO: Write giant parse tree to test this program.
 }
 
