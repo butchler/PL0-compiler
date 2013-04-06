@@ -44,5 +44,6 @@ char *getMatch(regex_t *regex, char *string);
 char *getRegexError(int error, regex_t *regex);
 
 void addLexerError(char *message);
+char *getLexerErrors();
 
 #endif

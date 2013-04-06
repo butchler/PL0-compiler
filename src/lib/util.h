@@ -23,4 +23,8 @@ char *substring(char *string, int length);
 // Based on the example in the manpage for strtol.
 int isInteger(char *string);
 
+// Takes a filename and opens the given files, reads the entire contents into a
+// string, closes the file, and returns the string.
+char *readContents(char *filename);
+
 #endif

@@ -19,61 +19,6 @@
  * - Return list of lexemes.
  */
 
-// Regexes that match each token type, along with the token type that they map
-// to. The regexes are compiled with REG_EXTENDED (they are interpreted as
-// POSIX extended regular expressions).
-struct tokenDefinition tokenDefinitions[] = {
-
-    // Whitespace
-    {"\\s+", "whitespace"},
-    // The comment regex is based off of http://ostermiller.org/findcomment.html
-    // [*] matches a single * character, and looks slightely nicer than \\*
-    // (\\* instead of \* because it needs to be escaped twice: once for the C
-    // string and another time for the regex.)
-    {"/[*]([^*]|[*]+[^*/])*[*]+/", "comment"},
-    // Keywords
-    // \\b = \b and matches the empty string, but only along a word boundary,
-    // where words anything that contains [a-zA-Z0-9_].
-    {"begin\\b", "begin"},
-    {"while\\b", "while"},
-    {"const\\b", "const"},
-    {"write\\b", "write"},
-    {"call\\b", "call"},
-    {"then\\b", "then"},
-    {"procedure\\b", "procedure"},
-    {"read\\b", "read"},
-    {"else\\b", "else"},
-    {"odd\\b", "odd"},
-    {"end\\b", "end"},
-    {"int\\b", "int"},
-    {"if\\b", "if"},
-    {"do\\b", "do"},
-    // Identifiers
-    {"[a-zA-Z]\\w*", "identsym"},
-    // Numbers
-    {"[0-9]+", "numbersym"},
-    // Special symbols
-    {">=", ">="},
-    {"<=", "<="},
-    {"<>", "<>"},
-    {":=", ":="},
-    {"[+]", "+"},
-    {"-", "-"},
-    {"[*]", "*"},
-    {"/", "/"},
-    {"=", "="},
-    {"<", "<"},
-    {">", ">"},
-    {"[(]", "("},
-    {"[)]", ")"},
-    {",", ","},
-    {";", ";"},
-    {"[.]", "."},
-    // Indicates the end of token definitions.
-    {NULL, NULL}
-
-};
-
 struct vector *readLexemes(char *source, struct vector *tokenDefinitions) {
     // Reset lexer errors.
     extern struct vector *lexerErrors;
@@ -89,7 +34,7 @@ struct vector *readLexemes(char *source, struct vector *tokenDefinitions) {
     while (*currentPosition != '\0') {
         struct lexeme lexeme = readLexeme(currentPosition, tokenDefinitions);
 
-        if (lexeme.token == NULL) {
+        if (lexeme.token != NULL) {
             push(lexemes, lexeme);
             currentPosition += strlen(lexeme.token);
         } else {

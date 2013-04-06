@@ -50,6 +50,6 @@ void addRule(struct grammar grammar, char *variable, char *productionString);
 
 //char *setParserError(char *message);
 void addParserError(char *message, int currentIndex);
-char *getParserError();
+char *getParserErrors();
 
 #endif

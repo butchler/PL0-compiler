@@ -6,13 +6,14 @@
 #include <stdlib.h>
 #include <assert.h>
 
-// Nested functions defined inside parse().
-struct parseTree parseVariable(int index, char *currentVariable);
-struct parseTree parseRule(struct rule rule, int index);
-int isVariable(char *string);
-
 struct parseTree parse(struct vector *lexemes, struct grammar grammar,
         char *startVariable) {
+    // The auto keyword is required when declaring nested functions without
+    // defining them (http://gcc.gnu.org/onlinedocs/gcc/Nested-Functions.html).
+    auto struct parseTree parseVariable(int index, char *currentVariable);
+    auto struct parseTree parseRule(struct rule rule, int index);
+    auto int isVariable(char *string);
+
     // Reset parser errors.
     extern struct vector *parserErrors;
     extern int maxIndex;
@@ -107,6 +108,8 @@ struct parseTree parse(struct vector *lexemes, struct grammar grammar,
 
         return 0;
     }
+
+    doParse();
 }
 
 struct parseTree errorTree() {
@@ -184,7 +187,7 @@ void addParserError(char *message, int currentIndex) {
         push(parserErrors, message);
 }
 
-char *getParserError() {
+char *getParserErrors() {
     if (parserErrors == NULL)
         return NULL;
 
