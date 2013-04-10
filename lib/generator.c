@@ -1,19 +1,28 @@
-#include "src/generator.h"
-#include "src/parser.h"
-#include "src/lib/util.h"
+#include "lib/generator.h"
+#include "lib/parser.h"
+#include "lib/util.h"
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 
 struct vector *generateInstructions(struct parseTree tree) {
-    // Reset error messages.
-    extern struct vector *generatorErrors;
-    generatorErrors = NULL;
+    clearGeneratorErrors();
 
     struct generatorState *state = makeGeneratorState();
     generate(tree, state);
     return state->instructions;
+}
+
+void printInstructions(struct vector *instructions, int humanReadable) {
+    forVector(instructions, i, struct instruction, instruction,
+        int lineNumber = i + 1;
+        if (humanReadable)
+            printf("%3d %s %d %d\n", lineNumber, instruction.opcodeName,
+                    instruction.lexicalLevel, instruction.modifier);
+        else
+            printf("%d %d %d\n", instruction.opcode,
+                    instruction.lexicalLevel, instruction.modifier););
 }
 
 void generate(struct parseTree tree, struct generatorState *state) {
@@ -77,17 +86,18 @@ void generate_block(struct parseTree tree, struct generatorState *state) {
 void generate_varDeclaration(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "vars"));
 
-    struct generatorState *fakeState = copyGeneratorState(state);
-    generate(getChild(tree, "vars"), fakeState);
-    // Each "var" node adds one instruction, so we can use that to find the
-    // number of variables.
-    int numVariables = fakeState->instructions->length - state->instructions->length;
+    int instructionsBefore = state->instructions->length;
+    generate(getChild(tree, "vars"), state);
+    int instructionsAfter = state->instructions->length;
+
+    // One instructions is added for each variables.
+    int numVariables = instructionsAfter - instructionsBefore;
 
     // Allocate space for the variables.
     addInstruction(state, "inc", 0, numVariables);
-    // Ignore the instructions that the vars generate, but keep the symbols
-    // that they added.
-    state->symbols = fakeState->symbols;
+
+    // Ignore the instructions that were generated for each variables.
+    state->instructions->length -= numVariables;
 }
 
 void generate_vars(struct parseTree tree, struct generatorState *state) {
@@ -172,38 +182,35 @@ void generate_assignment(struct parseTree tree, struct generatorState *state) {
 void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "condition") && hasChild(tree, "statement"));
 
+    generate(getChild(tree, "condition"), state);
     // Generate a fake jpc instruction first so that we can find out what
     // instruction we need to jump to.
-    struct generatorState *fakeState = copyGeneratorState(state);
-    generate(getChild(tree, "condition"), fakeState);
-    addInstruction(fakeState, "jpc", -1, -1);
-    generate(getChild(tree, "statement"), fakeState);
-    int afterIfStatement = fakeState->instructions->length;
-
-    // Generate the real instructions.
-    generate(getChild(tree, "condition"), state);
-    addInstruction(state, "jpc", 0, afterIfStatement);
+    addInstruction(state, "jpc", -1, -1);
+    int jpcIndex = state->instructions->length - 1;
     generate(getChild(tree, "statement"), state);
+    int afterIfStatement = state->instructions->length;
+
+    // Modify the jpc instruction to jump to the end of the if statement.
+    struct instruction jpcInstruction = makeInstruction("jpc", 0, afterIfStatement);
+    set(state->instructions, jpcIndex, jpcInstruction);
 }
 
 void generate_whileStatement(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "condition") && hasChild(tree, "statement"));
 
+    int beginning = state->instructions->length - 1;
+    generate(getChild(tree, "condition"), state);
     // Generate a fake jpc instruction first so that we can find out what
     // instruction we need to jump to.
-    int beginning = state->instructions->length - 1;
-    struct generatorState *fakeState = copyGeneratorState(state);
-    generate(getChild(tree, "condition"), fakeState);
-    addInstruction(fakeState, "jpc", -1, -1);
-    generate(getChild(tree, "statement"), fakeState);
-    addInstruction(fakeState, "jmp", 0, beginning);
-    int afterWhileLoop = fakeState->instructions->length;
-
-    // Generate the real instructions.
-    generate(getChild(tree, "condition"), state);
-    addInstruction(state, "jpc", 0, afterWhileLoop);
+    addInstruction(state, "jpc", -1, -1);
+    int jpcIndex = state->instructions->length - 1;
     generate(getChild(tree, "statement"), state);
     addInstruction(state, "jmp", 0, beginning);
+    int afterWhileLoop = state->instructions->length;
+
+    // Modify the jpc instruction to jump to the end of the if statement.
+    struct instruction jpcInstruction = makeInstruction("jpc", 0, afterWhileLoop);
+    set(state->instructions, jpcIndex, jpcInstruction);
 }
 
 void generate_condition(struct parseTree tree, struct generatorState *state) {
@@ -324,6 +331,27 @@ void generate_relationalOperator(struct parseTree tree, struct generatorState *s
         assert(0 /* Invalid relational operator. */);
 }
 
+// Generator state functions
+// =========================
+struct generatorState *makeGeneratorState() {
+    struct generatorState *state = malloc(sizeof (struct generatorState));
+
+    state->symbols = makeVector(struct symbol);
+    state->currentLevel = 0;
+    state->instructions = makeVector(struct instruction);
+
+    return state;
+}
+
+void addInstruction(struct generatorState *state, char *instruction, int lexicalLevel, int modifier) {
+    pushLiteral(state->instructions, struct instruction,
+            makeInstruction(instruction, lexicalLevel, modifier));
+}
+
+struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier) {
+    return (struct instruction){getOpcode(instruction), instruction, lexicalLevel, modifier};
+}
+
 int getOpcode(char *instruction) {
     if (strcmp(instruction, "lit") == 0) return 1;
     if (strcmp(instruction, "opr") == 0) return 2;
@@ -336,34 +364,6 @@ int getOpcode(char *instruction) {
     if (strcmp(instruction, "sio") == 0) return 9;
 
     return 0;
-}
-
-struct generatorState *makeGeneratorState() {
-    struct generatorState *state = malloc(sizeof (struct generatorState));
-
-    state->symbols = makeVector(struct symbol);
-    state->currentLevel = 0;
-    state->instructions = makeVector(struct instruction);
-
-    return state;
-}
-struct generatorState *copyGeneratorState(struct generatorState *state) {
-    struct generatorState *copy = malloc(sizeof (struct generatorState));
-
-    copy->symbols = vector_copy(state->symbols);
-    copy->currentLevel = state->currentLevel;
-    copy->instructions = vector_copy(state->instructions);
-
-    return copy;
-}
-
-struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier) {
-    return (struct instruction){getOpcode(instruction), instruction, lexicalLevel, modifier};
-}
-
-void addInstruction(struct generatorState *state, char *instruction, int lexicalLevel, int modifier) {
-    pushLiteral(state->instructions, struct instruction,
-            makeInstruction(instruction, lexicalLevel, modifier));
 }
 
 // If the given parse tree has a single child node, return the name of that
@@ -427,6 +427,8 @@ struct symbol getSymbol(struct generatorState *state, char *name) {
     return (struct symbol){NULL, 0, 0, 0, 0};
 }
 
+// Error functions
+// ===============
 struct vector *generatorErrors = NULL;
 
 void addGeneratorError(char *errorMessage) {
@@ -435,11 +437,16 @@ void addGeneratorError(char *errorMessage) {
 
     push(generatorErrors, errorMessage);
 }
-int generatorHasErrors() {
-    return (generatorErrors != NULL);
+void clearGeneratorErrors() {
+    if (generatorErrors != NULL)
+        freeVector(generatorErrors);
+
+    generatorErrors = NULL;
 }
-char *printGeneratorErrors() {
-    forVector(generatorErrors, i, char*, message,
-            puts(message););
+char *getGeneratorErrors() {
+    if (generatorErrors == NULL)
+        return NULL;
+    else
+        return joinStrings(generatorErrors, "\n");
 }
 

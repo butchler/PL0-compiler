@@ -26,12 +26,22 @@
 // -------------
 //
 // struct vector *stuff = makeVector(char*);
-// pushLiteral(stuff, char*, "a");   // stuff = ["a"]
+// pushLiteral(stuff, char*, "a");              // stuff = {"a"}
+//
 // stuff vector *stuff2 = makeVector(char*);
-// char *first = get(char*, stuff, 0);
-// push(stuff2, first);   // stuff2 = ["a"]
-// pushLiteral(stuff2, char*, "b");   // stuff2 = ["a", "b"]
-// vector_concat(stuff, stuff2);   // stuff = ["a", "a", "b"]
+// pushLiteral(stuff2, char*, "b");             // stuff2 = {"b"}
+// char *first = get(char*, stuff, 0);          // first = "a"
+// push(stuff2, first);                         // stuff2 = {"b", "a"}
+//
+// vector_concat(stuff, stuff2);                // stuff = {"a", "b", "a"}
+//
+// forVector(stuff, i, char*, string,
+//     printf("stuff[%d] = %s\n", i, string););
+// 
+// Outputs:
+// stuff[0] = a
+// stuff[1] = a
+// stuff[2] = b
 
 struct vector
 {
@@ -62,6 +72,8 @@ struct vector
 #define set(vector, index, item) vector_set(vector, index, (void*)(&item))
 #define get(type, vector, index) (*(type*)vector_get(vector, index))
 #define freeVector(vector) vector_free(vector)
+// Executes the given code for each item in the vector, using the given
+// variable names to hold the current index and current item's value.
 #define forVector(vector, indexVariable, type, itemVariable, ...) {\
     int indexVariable;\
     for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
@@ -69,6 +81,10 @@ struct vector
         __VA_ARGS__\
     }\
 }
+// Does the same thing as forVector, but sets itemVariable to be a pointer to
+// the value stored in the vector, instead of the dereferenced value. Useful if
+// you have a vector of structs and want to modify each struct as you iterate
+// through the vector.
 #define forVectorPointers(vector, indexVariable, type, itemVariable, ...) {\
     int indexVariable;\
     for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\

@@ -1,10 +1,30 @@
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
-// Include parse for the parse tree type
-// which is referenced in this file
-#include "src/parser.h"
-#include "src/lib/vector.h"
+#include "lib/vector.h"
+#include "lib/parser.h"
+
+/**
+ * Code generator usage example:
+ *
+ * char *sourceCode = ...;
+ *
+ * // source code -> list of tokens
+ * struct vector *tokens = readPL0Tokens(sourceCode);
+ *
+ * // list of tokens -> parse tree
+ * struct parseTree tree = parsePL0Tokens(tokens);
+ *
+ * // parse tree -> list of VM instructions
+ * struct vector *instructions = generateInstructions(tree);
+ *
+ * if (getGeneratorErrors() != NULL)
+ *     printf("Code generator had errors:\n%s\n\n", getGeneratorErrors());
+ *
+ * // print instructions in a (somewhat) human readable format.
+ * int humanReadable = 1;
+ * printInstructions(instructions, humanReadable);
+ */
 
 // Represents a VM instruction.
 struct instruction {
@@ -40,7 +60,18 @@ struct generatorState {
 // generatorState for you. Use it instead of using generate directly.
 struct vector *generateInstructions(struct parseTree tree);
 
-// Given a parse tree, generate a list of VM instructions.
+// Print a list of instructions returned by generateInstructions. If
+// humanReadable is false, will print out a list of instructions suitable for
+// being passed directly to the VM. Otherwise, prints something a little bit
+// more friendly.
+void printInstructions(struct vector *instructions, int humanReadable);
+
+void addGeneratorError(char *errorMessage);
+void clearGeneratorErrors();
+char *getGeneratorErrors();
+
+// Functions used by generatorInstructions.
+// ========================================
 void generate(struct parseTree tree, struct generatorState *state);
 void generate_program(struct parseTree tree, struct generatorState *state);
 void generate_block(struct parseTree tree, struct generatorState *state);
@@ -68,28 +99,22 @@ void generate_sign(struct parseTree tree, struct generatorState *state);
 void generate_number(struct parseTree tree, struct generatorState *state);
 void generate_identifier(struct parseTree tree, struct generatorState *state);
 
+// Functions for creating and modifying generatorState structs.
+// ============================================================
 struct generatorState *makeGeneratorState();
-struct generatorState *copyGeneratorState(struct generatorState *state);
 void addInstruction(struct generatorState *state, char *instruction, int level, int modifier);
 void addLoadInstruction(struct generatorState *state, struct parseTree identifierTree);
 void addStoreInstruction(struct generatorState *state, struct parseTree identifierTree);
-
-// Given a string represtation of an instruction, such as "lit" or "sto",
-// return the corresponding integer opcode.
-int getOpcode(char *instruction);
-
-// Utility function to initialize a struct instruction.
-struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier);
-
-// Add and get a symbol from the symbol table.
 void addVariable(struct generatorState *state, struct parseTree identifierTree);
 void addConstant(struct generatorState *state, struct parseTree identifierTree,
         struct parseTree numberTree);
 struct symbol getSymbol(struct generatorState *state, char *name);
 
-// Get and set an error in case a function returns a failure value.
-void addGeneratorError(char *errorMessage);
-int generatorHasErrors();
-char *printGeneratorErrors();
+// Functions used by addInstruction.
+// Utility function to initialize a struct instruction.
+struct instruction makeInstruction(char *instruction, int lexicalLevel, int modifier);
+// Given a string represtation of an instruction, such as "lit" or "sto",
+// return the corresponding integer opcode.
+int getOpcode(char *instruction);
 
 #endif

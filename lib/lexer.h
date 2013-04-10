@@ -1,7 +1,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-struct lexeme {
+struct token {
 
    char *tokenType;
    char *token;

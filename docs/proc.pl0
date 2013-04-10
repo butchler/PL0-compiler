@@ -1,0 +1,19 @@
+int x, y;
+procedure A;
+    const a = 2, b = 1;
+    int c;
+    begin
+        c := x * a + y + b;
+        c := c * c
+    end;
+begin
+    x := 0;
+    y := 0;
+    call A;
+    write x;
+    x := 1;
+    y := 2;
+    call A;
+    write x
+end.
+

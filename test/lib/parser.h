@@ -1,7 +1,7 @@
 #ifndef TEST_PARSER_H
 #define TEST_PARSER_H
 
-#include "src/parser.h"
+#include "lib/parser.h"
 
 // This file holds functions used to test the parser.
 
@@ -25,7 +25,5 @@ int parseTreesEqual(struct parseTree x, struct parseTree y);
 // in a generated parse tree and it would be annoying to have to type all of
 // them to test the parser.
 int parseTreesSimilar(struct parseTree x, struct parseTree y);
-
-void printParseTree(struct parseTree tree);
 
 #endif

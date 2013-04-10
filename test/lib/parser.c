@@ -1,7 +1,6 @@
 #include "test/lib/parser.h"
 #include <string.h>
 #include <assert.h>
-#include <stdio.h>
 
 struct parseTree generateParseTree(char *form) {
     if (form[0] == '(') {
@@ -143,28 +142,5 @@ struct parseTree removeLeaves(struct parseTree tree) {
 
 int parseTreesSimilar(struct parseTree x, struct parseTree y) {
     return parseTreesEqual(removeLeaves(x), removeLeaves(y));
-}
-
-void printParseTree(struct parseTree root) {
-    void print(struct parseTree tree, int level) {
-        void printIndent() {
-            int i;
-            for (i = 0; i < 4 * level; i++)
-                printf(" ");
-        }
-
-        printIndent();
-        printf("%s\n", tree.name);
-
-        if (tree.children != NULL) {
-            int i;
-            for (i = 0; i < tree.children->length; i++) {
-                struct parseTree child = get(struct parseTree, tree.children, i);
-                print(child, level + 1);
-            }
-        }
-    }
-
-    print(root, 0);
 }
 

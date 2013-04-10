@@ -1,12 +1,13 @@
-#include "src/parser.h"
-#include "src/lexer.h"
-#include "src/lib/util.h"
+#include "lib/parser.h"
+#include "lib/lexer.h"
+#include "lib/util.h"
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
-struct parseTree parse(struct vector *lexemes, struct grammar grammar,
+struct parseTree parse(struct vector *tokens, struct grammar grammar,
         char *startVariable) {
     // The auto keyword is required when declaring nested functions without
     // defining them (http://gcc.gnu.org/onlinedocs/gcc/Nested-Functions.html).
@@ -14,16 +15,12 @@ struct parseTree parse(struct vector *lexemes, struct grammar grammar,
     auto struct parseTree parseRule(struct rule rule, int index);
     auto int isVariable(char *string);
 
-    // Reset parser errors.
-    extern struct vector *parserErrors;
-    extern int maxIndex;
-    parserErrors = NULL;
-    maxIndex = 0;
+    clearParserErrors();
 
     return parseVariable(0, startVariable);
 
     // Try to parse the given variable starting at the given index in the
-    // lexeme list.
+    // token list.
     struct parseTree parseVariable(int index, char *currentVariable) {
         // For each production rule in the grammar.
         forVector(grammar.rules, i, struct rule, rule,
@@ -56,7 +53,7 @@ struct parseTree parse(struct vector *lexemes, struct grammar grammar,
                 continue;
 
             // Return an error if we hit end of input before parsing is done.
-            if (index >= lexemes->length) {
+            if (index >= tokens->length) {
                     addParserError(
                         format("Expected '%s' but got end of input while parsing %s.",
                             varOrTerminal, rule.variable),
@@ -82,15 +79,15 @@ struct parseTree parse(struct vector *lexemes, struct grammar grammar,
                 // production rule expects, add it to the parse tree and go to
                 // the next token. Otherwise, return an error.
                 char *tokenType = varOrTerminal;
-                struct lexeme currentLexeme = get(struct lexeme, lexemes, index);
+                struct token currentToken = get(struct token, tokens, index);
 
-                if (strcmp(currentLexeme.tokenType, tokenType) == 0) {
-                    pushLiteral(children, struct parseTree, {currentLexeme.token, NULL, 1});
+                if (strcmp(currentToken.tokenType, tokenType) == 0) {
+                    pushLiteral(children, struct parseTree, {currentToken.token, NULL, 1});
                     index += 1;
                 } else {
                     addParserError(
                         format("Expected '%s' but got '%s' while parsing %s.",
-                            varOrTerminal, currentLexeme.token, rule.variable),
+                            varOrTerminal, currentToken.token, rule.variable),
                         index);
                     // TODO: Free children before return.
                     return errorTree();
@@ -108,8 +105,6 @@ struct parseTree parse(struct vector *lexemes, struct grammar grammar,
 
         return 0;
     }
-
-    doParse();
 }
 
 struct parseTree errorTree() {
@@ -172,25 +167,62 @@ void addRule(struct grammar grammar, char *variable, char *productionString) {
 }
 
 struct vector *parserErrors = NULL;
-int maxIndex = 0;
+int maxTokens = 0;
 
-void addParserError(char *message, int currentIndex) {
-    // Only the "most successful" errors should be shown, so there is an error
-    // at a higher index in the token list, get rid of all of the previous
-    // errors.
-    if (parserErrors == NULL || currentIndex > maxIndex) {
-        maxIndex = currentIndex;
+void addParserError(char *message, int numTokens) {
+    if (parserErrors == NULL)
+        parserErrors = makeVector(char*);
+
+    // We only want to keep the "most successful" errors, because otherwise
+    // there would be too many errors to be useful. By most successful, I mean
+    // that we want the parser to successfully parse as many tokens as it
+    // possibly can before getting an error, and then only keep those errors
+    // that occurred at the greatest depth into the token list (this is not the
+    // same thing as the last error generated, because the parser may backtrack
+    // and try other options before finally giving up). So, we ignore any
+    // errors that occurred after parsing a smaller number of tokens.
+    if (numTokens > maxTokens) {
+        clearParserErrors();
+        maxTokens = numTokens;
         parserErrors = makeVector(char*);
     }
 
-    if (currentIndex == maxIndex)
+    if (numTokens == maxTokens)
         push(parserErrors, message);
+}
+
+void clearParserErrors() {
+    parserErrors = NULL;
+    maxTokens = 0;
 }
 
 char *getParserErrors() {
     if (parserErrors == NULL)
         return NULL;
+    else
+        return joinStrings(parserErrors, "\n");
+}
 
-    return joinStrings(parserErrors, "\n");
+void printParseTree(struct parseTree root) {
+    void print(struct parseTree tree, int level) {
+        void printIndent() {
+            int i;
+            for (i = 0; i < 4 * level; i++)
+                printf(" ");
+        }
+
+        printIndent();
+        printf("%s\n", tree.name);
+
+        if (tree.children != NULL) {
+            int i;
+            for (i = 0; i < tree.children->length; i++) {
+                struct parseTree child = get(struct parseTree, tree.children, i);
+                print(child, level + 1);
+            }
+        }
+    }
+
+    print(root, 0);
 }
 

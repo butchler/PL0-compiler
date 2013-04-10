@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+// Random utility functions, mostly dealing with strings.
+
 // Wrapper for sprintf that allocates the string for you. Copied from the
 // manpage for printf.
 char *format(const char *fmt, ...);
