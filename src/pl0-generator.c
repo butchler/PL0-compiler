@@ -115,154 +115,152 @@ void generate(struct parseTree tree, struct generatorState *state) {
         (*generateFunction)(tree, state);
     }
 
-    if (is("program")) call(generate_program);
-    else if (is("block")) call(generate_block);
-    else if (is("var-declaration")) call(generate_varDeclaration);
-    else if (is("vars")) call(generate_vars);
-    else if (is("var")) call(generate_var);
-    else if (is("const-declaration")) call(generate_constDeclaration);
-    else if (is("constants")) call(generate_constants);
-    else if (is("constant")) call(generate_constant);
-    else if (is("statement")) call(generate_statement);
-    else if (is("begin-block")) call(generate_beginBlock);
-    else if (is("statements")) call(generate_statements);
-    else if (is("read-statement")) call(generate_readStatement);
-    else if (is("write-statement")) call(generate_writeStatement);
-    else if (is("if-statement")) call(generate_ifStatement);
-    else if (is("while-statement")) call(generate_whileStatement);
-    else if (is("condition")) call(generate_condition);
-    else if (is("rel-op")) call(generate_relationalOperator);
-    else if (is("expression")) call(generate_expression);
-    else if (is("add-or-subtract")) call(generate_addOrSubtract);
-    else if (is("term")) call(generate_term);
-    else if (is("multiply-or-divide")) call(generate_multiplyOrDivide);
-    else if (is("factor")) call(generate_factor);
-    else if (is("sign")) call(generate_sign);
-    else if (is("number")) call(generate_number);
-    else if (is("identifier")) call(generate_identifier);
+    if (is("@program")) call(generate_program);
+    else if (is("@block")) call(generate_block);
+    else if (is("@var-declaration")) call(generate_varDeclaration);
+    else if (is("@vars")) call(generate_vars);
+    else if (is("@var")) call(generate_var);
+    else if (is("@const-declaration")) call(generate_constDeclaration);
+    else if (is("@constants")) call(generate_constants);
+    else if (is("@constant")) call(generate_constant);
+    else if (is("@statement")) call(generate_statement);
+    else if (is("@begin-block")) call(generate_beginBlock);
+    else if (is("@statements")) call(generate_statements);
+    else if (is("@read-statement")) call(generate_readStatement);
+    else if (is("@write-statement")) call(generate_writeStatement);
+    else if (is("@if-statement")) call(generate_ifStatement);
+    else if (is("@while-statement")) call(generate_whileStatement);
+    else if (is("@condition")) call(generate_condition);
+    else if (is("@rel-op")) call(generate_relationalOperator);
+    else if (is("@expression")) call(generate_expression);
+    else if (is("@add-or-subtract")) call(generate_addOrSubtract);
+    else if (is("@term")) call(generate_term);
+    else if (is("@multiply-or-divide")) call(generate_multiplyOrDivide);
+    else if (is("@factor")) call(generate_factor);
+    else if (is("@sign")) call(generate_sign);
+    else if (is("@number")) call(generate_number);
+    else if (is("@identifier")) call(generate_identifier);
 }
 
 void generate_program(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "block"));
+    assert(hasChild(tree, "@block"));
 
-    generate(getChild(tree, "block"), state);
+    generate(getChild(tree, "@block"), state);
     // Add a return instruction at the end of the program.
     addInstruction(state, "opr", 0, 0);
 }
 
 void generate_block(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "statement"));
+    assert(hasChild(tree, "@statement"));
 
-    generate(getChild(tree, "var-declaration"), state);
-    generate(getChild(tree, "const-declaration"), state);
-    generate(getChild(tree, "statement"), state);
+    generate(getChild(tree, "@var-declaration"), state);
+    generate(getChild(tree, "@const-declaration"), state);
+    generate(getChild(tree, "@statement"), state);
 }
 
 void generate_varDeclaration(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "vars"));
+    if (hasChild(tree, "@vars")) {
+        int instructionsBefore = state->instructions->length;
+        generate(getChild(tree, "@vars"), state);
+        int instructionsAfter = state->instructions->length;
 
-    int instructionsBefore = state->instructions->length;
-    generate(getChild(tree, "vars"), state);
-    int instructionsAfter = state->instructions->length;
+        // One instructions is added for each variables.
+        int numVariables = instructionsAfter - instructionsBefore;
 
-    // One instructions is added for each variables.
-    int numVariables = instructionsAfter - instructionsBefore;
+        // Allocate space for the variables.
+        addInstruction(state, "inc", 0, numVariables);
 
-    // Allocate space for the variables.
-    addInstruction(state, "inc", 0, numVariables);
-
-    // Ignore the instructions that were generated for each variables.
-    state->instructions->length -= numVariables;
+        // Ignore the instructions that were generated for each variables.
+        state->instructions->length -= numVariables;
+    }
 }
 
 void generate_vars(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "var"));
+    assert(hasChild(tree, "@var"));
 
-    generate(getChild(tree, "var"), state);
-    // If there is no "vars" child, generate will just return without
+    generate(getChild(tree, "@var"), state);
+    // If there is no "@vars" child, generate will just return without
     // adding any instructions.
-    generate(getChild(tree, "vars"), state);
+    generate(getChild(tree, "@vars"), state);
 }
 
 void generate_var(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "identifier"));
+    assert(hasChild(tree, "@identifier"));
 
-    addVariable(state, getChild(tree, "identifier"));
+    addVariable(state, getChild(tree, "@identifier"));
     // Add a fake instruction so that generate_varDeclaration can count the
     // number of variables added and add its own inc instruction.
     addInstruction(state, "inc", -1, -1);
 }
 
 void generate_constDeclaration(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "constants"));
-
-    generate(getChild(tree, "constants"), state);
+    generate(getChild(tree, "@constants"), state);
 }
 
 void generate_constants(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "constant"));
+    assert(hasChild(tree, "@constant"));
 
-    generate(getChild(tree, "constant"), state);
-    // If there is no "constants" child, generate will just return without
+    generate(getChild(tree, "@constant"), state);
+    // If there is no "@constants" child, generate will just return without
     // adding any instructions.
-    generate(getChild(tree, "constants"), state);
+    generate(getChild(tree, "@constants"), state);
 }
 
 void generate_constant(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "identifier") && hasChild(tree, "number"));
+    assert(hasChild(tree, "@identifier") && hasChild(tree, "@number"));
 
-    addConstant(state, getChild(tree, "identifier"), getChild(tree, "number"));
+    addConstant(state, getChild(tree, "@identifier"), getChild(tree, "@number"));
 }
 
 void generate_statement(struct parseTree tree, struct generatorState *state) {
-    //assert(hasChild("if-statement") || hasChild("assignment") || hasChild("while-statement") || hasChild("begin-block") || hasChild("read-statement") || hasChild("write-statement"));
+    //assert(hasChild("@if-statement") || hasChild("@assignment") || hasChild("@while-statement") || hasChild("@begin-block") || hasChild("@read-statement") || hasChild("@write-statement"));
 
     generate(getFirstChild(tree), state);
 }
 
 void generate_statements(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "statement"));
+    assert(hasChild(tree, "@statement"));
 
-    generate(getChild(tree, "statement"), state);
-    generate(getChild(tree, "statements"), state);
+    generate(getChild(tree, "@statement"), state);
+    generate(getChild(tree, "@statements"), state);
 }
 
 void generate_beginBlock(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "statements"));
+    assert(hasChild(tree, "@statements"));
 
-    generate(getChild(tree, "statements"), state);
+    generate(getChild(tree, "@statements"), state);
 }
 
 void generate_readStatement(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "identifier"));
+    assert(hasChild(tree, "@identifier"));
 
     addInstruction(state, "sio", 0, 2);
-    addStoreInstruction(state, getChild(tree, "identifier"));
+    addStoreInstruction(state, getChild(tree, "@identifier"));
 }
 
 void generate_writeStatement(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "identifier"));
+    assert(hasChild(tree, "@identifier"));
 
-    addLoadInstruction(state, getChild(tree, "identifier"));
+    addLoadInstruction(state, getChild(tree, "@identifier"));
     addInstruction(state, "sio", 0, 1);
 }
 
 void generate_assignment(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "expression") && hasChild(tree, "identifier"));
+    assert(hasChild(tree, "@expression") && hasChild(tree, "@identifier"));
 
-    generate(getChild(tree, "expression"), state);
-    addStoreInstruction(state, getChild(tree, "identifier"));
+    generate(getChild(tree, "@expression"), state);
+    addStoreInstruction(state, getChild(tree, "@identifier"));
 }
 
 void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "condition") && hasChild(tree, "statement"));
+    assert(hasChild(tree, "@condition") && hasChild(tree, "@statement"));
 
-    generate(getChild(tree, "condition"), state);
+    generate(getChild(tree, "@condition"), state);
     // Generate a fake jpc instruction first so that we can find out what
     // instruction we need to jump to.
     addInstruction(state, "jpc", -1, -1);
     int jpcIndex = state->instructions->length - 1;
-    generate(getChild(tree, "statement"), state);
+    generate(getChild(tree, "@statement"), state);
     int afterIfStatement = state->instructions->length;
 
     // Modify the jpc instruction to jump to the end of the if statement.
@@ -271,15 +269,15 @@ void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
 }
 
 void generate_whileStatement(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "condition") && hasChild(tree, "statement"));
+    assert(hasChild(tree, "@condition") && hasChild(tree, "@statement"));
 
     int beginning = state->instructions->length - 1;
-    generate(getChild(tree, "condition"), state);
+    generate(getChild(tree, "@condition"), state);
     // Generate a fake jpc instruction first so that we can find out what
     // instruction we need to jump to.
     addInstruction(state, "jpc", -1, -1);
     int jpcIndex = state->instructions->length - 1;
-    generate(getChild(tree, "statement"), state);
+    generate(getChild(tree, "@statement"), state);
     addInstruction(state, "jmp", 0, beginning);
     int afterWhileLoop = state->instructions->length;
 
@@ -289,30 +287,30 @@ void generate_whileStatement(struct parseTree tree, struct generatorState *state
 }
 
 void generate_condition(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "expression")
-            && (hasChild(tree, "rel-op") || hasChild(tree, "odd")));
+    assert(hasChild(tree, "@expression")
+            && (hasChild(tree, "@rel-op") || hasChild(tree, "odd")));
 
     if (hasChild(tree, "odd")) {
-        generate(getChild(tree, "expression"), state);
+        generate(getChild(tree, "@expression"), state);
         // Add the instruction that checks for oddity.
         addInstruction(state, "opr", 0, 6);
     } else {
-        generate(getChild(tree, "expression"), state);
-        generate(getLastChild(tree, "expression"), state);
-        generate(getChild(tree, "rel-op"), state);
+        generate(getChild(tree, "@expression"), state);
+        generate(getLastChild(tree, "@expression"), state);
+        generate(getChild(tree, "@rel-op"), state);
     }
 }
 
 void generate_expression(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "term"));
+    assert(hasChild(tree, "@term"));
 
-    generate(getChild(tree, "term"), state);
+    generate(getChild(tree, "@term"), state);
 
-    if (hasChild(tree, "add-or-subtract")) {
-        assert(hasChild(tree, "expression"));
+    if (hasChild(tree, "@add-or-subtract")) {
+        assert(hasChild(tree, "@expression"));
 
-        generate(getChild(tree, "expression"), state);
-        generate(getChild(tree, "add-or-subtract"), state);
+        generate(getChild(tree, "@expression"), state);
+        generate(getChild(tree, "@add-or-subtract"), state);
     }
 }
 
@@ -328,15 +326,15 @@ void generate_addOrSubtract(struct parseTree tree, struct generatorState *state)
 }
 
 void generate_term(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "factor"));
+    assert(hasChild(tree, "@factor"));
 
-    generate(getChild(tree, "factor"), state);
+    generate(getChild(tree, "@factor"), state);
 
-    if (hasChild(tree, "multiply-or-divide")) {
-        assert(hasChild(tree, "term"));
+    if (hasChild(tree, "@multiply-or-divide")) {
+        assert(hasChild(tree, "@term"));
 
-        generate(getChild(tree, "term"), state);
-        generate(getChild(tree, "multiply-or-divide"), state);
+        generate(getChild(tree, "@term"), state);
+        generate(getChild(tree, "@multiply-or-divide"), state);
     }
 }
 
@@ -352,20 +350,20 @@ void generate_multiplyOrDivide(struct parseTree tree, struct generatorState *sta
 }
 
 void generate_factor(struct parseTree tree, struct generatorState *state) {
-    assert(hasChild(tree, "expression") || hasChild(tree, "identifier")
-            || (hasChild(tree, "sign") && hasChild(tree, "number")));
+    assert(hasChild(tree, "@expression") || hasChild(tree, "@identifier")
+            || (hasChild(tree, "@sign") && hasChild(tree, "@number")));
 
     // If any of the children are not found, generate() will just return
     // without adding any instructions, so we can just try all of them without
     // checking a bunch of things (as long as we trust the parser to not do
     // something weird like pair an expression and number right next to each
     // other).
-    generate(getChild(tree, "number"), state);
-    generate(getChild(tree, "sign"), state);
+    generate(getChild(tree, "@number"), state);
+    generate(getChild(tree, "@sign"), state);
 
-    generate(getChild(tree, "identifier"), state);
+    generate(getChild(tree, "@identifier"), state);
 
-    generate(getChild(tree, "expression"), state);
+    generate(getChild(tree, "@expression"), state);
 }
 
 void generate_sign(struct parseTree tree, struct generatorState *state) {

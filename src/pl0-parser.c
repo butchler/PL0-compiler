@@ -11,7 +11,7 @@ struct grammar getPL0Grammar() {
     // they're just a convention I'm using to make it easier to know what's a
     // variable and what's a terminal in the production rules.
     struct grammar grammar = (struct grammar){makeVector(struct rule)};
-    addRule(grammar, "program", "@block .");
+    addRule(grammar, "@program", "@block .");
 
     addRule(grammar, "@block", "@const-declaration @var-declaration @statement");
 
@@ -98,6 +98,6 @@ struct grammar getPL0Grammar() {
 }
 
 struct parseTree parsePL0Tokens(struct vector *tokens) {
-    return parse(tokens, getPL0Grammar(), "program");
+    return parse(tokens, getPL0Grammar(), "@program");
 }
 
