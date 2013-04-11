@@ -1,12 +1,9 @@
-#include "lib/pl0.h"
-#include "lib/lexer.h"
-#include "lib/parser.h"
-#include "lib/vector.h"
+#include "src/pl0.h"
+#include "src/lib/lexer.h"
+#include "src/lib/parser.h"
+#include "src/lib/vector.h"
 #include <stdlib.h>
 #include <string.h>
-
-// readPL0Tokens() is defined in pl0-lexer.c, which is generated from
-// pl0-vector.l by flex.
 
 struct grammar getPL0Grammar() {
     // Define full PL/0 grammar.

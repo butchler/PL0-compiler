@@ -1,5 +1,5 @@
-#include "lib/util.h"
-#include "lib/vector.h"
+#include "src/lib/util.h"
+#include "src/lib/vector.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

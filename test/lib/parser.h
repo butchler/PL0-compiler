@@ -1,7 +1,7 @@
 #ifndef TEST_PARSER_H
 #define TEST_PARSER_H
 
-#include "lib/parser.h"
+#include "src/lib/parser.h"
 
 // This file holds functions used to test the parser.
 

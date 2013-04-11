@@ -1,17 +1,14 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "lib/vector.h"
-#include "lib/lexer.h"
-
-extern struct generatorState;
+#include "src/lib/vector.h"
+#include "src/lib/lexer.h"
 
 // A parseTree is basically just a tree of strings.
 struct parseTree {
     char *name;
     struct vector *children;
     int numTokens;   // The number of tokens that this parse tree represents.
-    void (*generateFunction)(struct parseTree, struct generatorState);
 };
 
 // A grammar holds the production rules of a context-free grammar.
@@ -24,9 +21,6 @@ struct rule {
     // variables or terminals.
     char *variable;
     struct vector *production;
-    // Each rule can also have a generate function which is passed along to the
-    // parse tree nodes that the rule matches.
-    void (*generateFunction)(struct parseTree, struct generatorState);
 };
 
 // Parse the given tokens using the given grammar and start variable,

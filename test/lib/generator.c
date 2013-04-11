@@ -1,5 +1,6 @@
 #include "test/lib/generator.h"
-#include "lib/util.h"   // For splitString
+#include "src/pl0.h"
+#include "src/lib/util.h"   // For splitString
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>

@@ -1,6 +1,6 @@
-#include "lib/parser.h"
-#include "lib/lexer.h"
-#include "lib/util.h"
+#include "src/lib/parser.h"
+#include "src/lib/lexer.h"
+#include "src/lib/util.h"
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>

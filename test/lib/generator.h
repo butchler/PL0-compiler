@@ -1,7 +1,7 @@
 #ifndef TEST_GENERATOR_H
 #define TEST_GENERATOR_H
 
-#include "lib/generator.h"
+#include "src/lib/vector.h"
 
 // This file holds functions used to test the code generator.
 
