@@ -1,7 +1,7 @@
 const a = 5;
-var x, y;
+int x, y;
 begin
     read x;
-    /*y := x * a + 1;*/
+    y := x * a + 1;
     write y;
 end.
