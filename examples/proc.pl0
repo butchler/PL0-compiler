@@ -16,4 +16,3 @@ begin
     call A;
     write x
 end.
-
