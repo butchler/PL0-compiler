@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
     // Print tokens.
     if (verbose >= 3) {
-        printf("\nTokens:\n");
+        printf("Tokens:\n");
         forVector(tokens, i, struct token, token,
                 printf("%s ", token.tokenType);
                 if (strcmp(token.tokenType, "identifier-token") == 0
@@ -45,7 +45,11 @@ int main(int argc, char **argv) {
     // Parse tokens.
     struct parseTree tree = parsePL0Tokens(tokens);
     if (isParseTreeError(tree)) {
-        printf("\nErrors while parsing program:\n%s\n", getParserErrors());
+        printf("Errors while parsing program:\n%s\n\n", getParserErrors());
+        // TODO: Make parser return useful information on errors.
+        /*printf("This is what the parser was able to parse:\n");
+        printParseTree(tree);
+        printf("\n");*/
         return 1;
     } 
 
@@ -53,23 +57,24 @@ int main(int argc, char **argv) {
     if (verbose >= 4) {
         printf("Parse tree:\n");
         printParseTree(tree);
-
         printf("\n");
     }
 
     // Generate code.
     struct vector *instructions = generatePL0(tree);
     if (getGeneratorErrors() != NULL) {
-        printf("The generator encountered errors:\n%s\n", getGeneratorErrors());
-        if (instructions != NULL)
-            printf("\nThis is what the generator was able to generate:\n");
-        printInstructions(instructions, 1);
+        printf("The generator encountered errors:\n%s\n\n", getGeneratorErrors());
+        if (instructions != NULL) {
+            printf("This is what the generator was able to generate:\n");
+            printInstructions(instructions, 1);
+            printf("\n");
+        }
 
         return 1;
     }
 
     if (verbose >= 1)
-        printf("\nNo errors, program is syntactically correct.\n");
+        printf("No errors, program is syntactically correct.\n\n");
 
     // Print generated code.
     assert(instructions != NULL);
@@ -84,4 +89,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-

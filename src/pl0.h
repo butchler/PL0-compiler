@@ -33,7 +33,8 @@ void printInstructions(struct vector *instructions, int humanReadable);
 // Used for checking if generatePL0 had any errors.
 char *getGeneratorErrors();
 
-// Code smell, get this out of here.
+// Given a VM instruction name, such as "lit" or "sto", returns the
+// corresponding integer opcode.
 int getOpcode(char *instruction);
 
 #endif

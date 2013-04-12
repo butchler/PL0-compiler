@@ -43,10 +43,14 @@ char *getParserErrors();
 struct parseTree getChild(struct parseTree parent, char *childName);
 // Returns the last child of the given parseTree that has the given name.
 struct parseTree getLastChild(struct parseTree parent, char *childName);
+// Returns true if parent has a child with the given name.
 int hasChild(struct parseTree parent, char *childName);
+// Returns a list of all of the children of parent with the given name.
+struct vector *getChildren(struct parseTree parent, char *childName);
 struct parseTree getFirstChild(struct parseTree parent);
+
+// Recursively print and free a parse tree and all of its children.
 void printParseTree(struct parseTree tree);
-// Recursively free a parse tree and all of its children.
 void freeParseTree(struct parseTree tree);
 
 // Functions for manipulating grammars

@@ -116,7 +116,7 @@ int isParseTreeError(struct parseTree tree) {
 }
 
 struct parseTree getChild(struct parseTree parent, char *childName) {
-    assert(parent.children != NULL);
+    assert(parent.children != NULL && childName != NULL);
 
     forVector(parent.children, i, struct parseTree, child,
         if (strcmp(child.name, childName) == 0)
@@ -126,7 +126,7 @@ struct parseTree getChild(struct parseTree parent, char *childName) {
 }
 
 struct parseTree getLastChild(struct parseTree parent, char *childName) {
-    assert(parent.children != NULL);
+    assert(parent.children != NULL && childName != NULL);
 
     int i;
     for (i = parent.children->length - 1; i >= 0; i--) {
@@ -142,6 +142,18 @@ int hasChild(struct parseTree parent, char *childName) {
     struct parseTree child = getChild(parent, childName);
 
     return !isParseTreeError(child);
+}
+
+struct vector *getChildren(struct parseTree parent, char *childName) {
+    assert(parent.children != NULL && childName != NULL);
+
+    struct vector *result = makeVector(struct parseTree);
+
+    forVector(parent.children, i, struct parseTree, child,
+            if (strcmp(child.name, childName) == 0)
+                push(result, child););
+
+    return result;
 }
 
 struct parseTree getFirstChild(struct parseTree tree) {

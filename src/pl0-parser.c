@@ -41,6 +41,7 @@ struct grammar getPL0Grammar() {
     addRule(grammar, "@statements", "@statement ; @statements");
     addRule(grammar, "@statements", "@statement");
 
+    addRule(grammar, "@if-statement", "if @condition then @statement else @statement");
     addRule(grammar, "@if-statement", "if @condition then @statement");
     addRule(grammar, "@condition", "@expression @rel-op @expression");
     addRule(grammar, "@condition", "odd @expression");

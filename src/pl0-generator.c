@@ -50,6 +50,7 @@ void generate_readStatement(struct parseTree tree, struct generatorState *state)
 void generate_writeStatement(struct parseTree tree, struct generatorState *state);
 void generate_ifStatement(struct parseTree tree, struct generatorState *state);
 void generate_whileStatement(struct parseTree tree, struct generatorState *state);
+void generate_assignment(struct parseTree tree, struct generatorState *state);
 void generate_condition(struct parseTree tree, struct generatorState *state);
 void generate_relationalOperator(struct parseTree tree, struct generatorState *state);
 void generate_expression(struct parseTree tree, struct generatorState *state);
@@ -91,9 +92,9 @@ struct vector *generatePL0(struct parseTree tree) {
 
 void printInstructions(struct vector *instructions, int humanReadable) {
     forVector(instructions, i, struct instruction, instruction,
-        int lineNumber = i + 1;
+        int lineNumber = i;
         if (humanReadable)
-            printf("%3d %s %d %d\n", lineNumber, instruction.opcodeName,
+            printf("%3d %-5s %-3d %-3d\n", lineNumber, instruction.opcodeName,
                     instruction.lexicalLevel, instruction.modifier);
         else
             printf("%d %d %d\n", instruction.opcode,
@@ -130,6 +131,7 @@ void generate(struct parseTree tree, struct generatorState *state) {
     else if (is("@write-statement")) call(generate_writeStatement);
     else if (is("@if-statement")) call(generate_ifStatement);
     else if (is("@while-statement")) call(generate_whileStatement);
+    else if (is("@assignment")) call(generate_assignment);
     else if (is("@condition")) call(generate_condition);
     else if (is("@rel-op")) call(generate_relationalOperator);
     else if (is("@expression")) call(generate_expression);
@@ -167,11 +169,11 @@ void generate_varDeclaration(struct parseTree tree, struct generatorState *state
         // One instructions is added for each variables.
         int numVariables = instructionsAfter - instructionsBefore;
 
-        // Allocate space for the variables.
-        addInstruction(state, "inc", 0, numVariables);
-
         // Ignore the instructions that were generated for each variables.
         state->instructions->length -= numVariables;
+
+        // Allocate space for the variables.
+        addInstruction(state, "inc", 0, numVariables);
     }
 }
 
@@ -234,7 +236,7 @@ void generate_beginBlock(struct parseTree tree, struct generatorState *state) {
 void generate_readStatement(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "@identifier"));
 
-    addInstruction(state, "sio", 0, 2);
+    addInstruction(state, "read", 0, 2);
     addStoreInstruction(state, getChild(tree, "@identifier"));
 }
 
@@ -242,7 +244,7 @@ void generate_writeStatement(struct parseTree tree, struct generatorState *state
     assert(hasChild(tree, "@identifier"));
 
     addLoadInstruction(state, getChild(tree, "@identifier"));
-    addInstruction(state, "sio", 0, 1);
+    addInstruction(state, "write", 0, 1);
 }
 
 void generate_assignment(struct parseTree tree, struct generatorState *state) {
@@ -252,7 +254,7 @@ void generate_assignment(struct parseTree tree, struct generatorState *state) {
     addStoreInstruction(state, getChild(tree, "@identifier"));
 }
 
-void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
+/*void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "@condition") && hasChild(tree, "@statement"));
 
     generate(getChild(tree, "@condition"), state);
@@ -266,6 +268,47 @@ void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
     // Modify the jpc instruction to jump to the end of the if statement.
     struct instruction jpcInstruction = makeInstruction("jpc", 0, afterIfStatement);
     set(state->instructions, jpcIndex, jpcInstruction);
+}*/
+
+void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
+    assert(hasChild(tree, "@condition") && hasChild(tree, "@statement"));
+
+    struct vector *statements = getChildren(tree, "@statement");
+    assert(statements->length == 1 || statements->length == 2);
+
+    if (statements->length == 1) {
+        // If statement
+        generate(getChild(tree, "@condition"), state);
+        // Generate a fake jpc instruction first so that we can find out what
+        // instruction we need to jump to.
+        addInstruction(state, "jpc", -1, -1);
+        int jpcIndex = state->instructions->length - 1;
+        generate(getChild(tree, "@statement"), state);
+        int afterIfStatement = state->instructions->length;
+
+        // Modify the jpc instruction to jump to the end of the if statement.
+        struct instruction jpcInstruction = makeInstruction("jpc", 0, afterIfStatement);
+        set(state->instructions, jpcIndex, jpcInstruction);
+    } else if (statements->length == 2) {
+        // If-else statement
+        generate(getChild(tree, "@condition"), state);
+        // Generate a fake jpc instruction first so that we can find out what
+        // instruction we need to jump to.
+        addInstruction(state, "jpc", -1, -1);
+        int jpcIndex = state->instructions->length - 1;
+        generate(getChild(tree, "@statement"), state);
+        addInstruction(state, "jmp", -1, -1);
+        int jmpIndex = state->instructions->length - 1;
+        int afterIf = state->instructions->length;
+        generate(getLastChild(tree, "@statement"), state);
+        int afterElse = state->instructions->length;
+
+        // Put the correct addresses in the jmp instructions.
+        struct instruction jpcInstruction = makeInstruction("jpc", 0, afterIf);
+        set(state->instructions, jpcIndex, jpcInstruction);
+        struct instruction jmpInstruction = makeInstruction("jmp", 0, afterElse);
+        set(state->instructions, jmpIndex, jmpInstruction);
+    }
 }
 
 void generate_whileStatement(struct parseTree tree, struct generatorState *state) {
@@ -367,10 +410,12 @@ void generate_factor(struct parseTree tree, struct generatorState *state) {
 }
 
 void generate_sign(struct parseTree tree, struct generatorState *state) {
-    char *sign = getFirstChild(tree).name;
+    if (tree.children->length > 0) {
+        char *sign = getFirstChild(tree).name;
 
-    if (strcmp(sign, "-") == 0)
-        addInstruction(state, "opr", 0, 1);
+        if (strcmp(sign, "-") == 0)
+            addInstruction(state, "opr", 0, 1);
+    }
 }
 
 void generate_number(struct parseTree tree, struct generatorState *state) {
@@ -434,7 +479,8 @@ int getOpcode(char *instruction) {
     if (strcmp(instruction, "inc") == 0) return 6;
     if (strcmp(instruction, "jmp") == 0) return 7;
     if (strcmp(instruction, "jpc") == 0) return 8;
-    if (strcmp(instruction, "sio") == 0) return 9;
+    if (strcmp(instruction, "write") == 0) return 9;
+    if (strcmp(instruction, "read") == 0) return 10;
 
     return 0;
 }
