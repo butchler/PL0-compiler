@@ -314,7 +314,7 @@ void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
 void generate_whileStatement(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "@condition") && hasChild(tree, "@statement"));
 
-    int beginning = state->instructions->length - 1;
+    int beginning = state->instructions->length;
     generate(getChild(tree, "@condition"), state);
     // Generate a fake jpc instruction first so that we can find out what
     // instruction we need to jump to.
