@@ -1,5 +1,0 @@
-const a = 5, b = 10;
-begin
-    write a;
-    write b;
-end.

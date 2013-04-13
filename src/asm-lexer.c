@@ -369,32 +369,30 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static yyconst flex_int16_t yy_accept[61] =
+static yyconst flex_int16_t yy_accept[34] =
     {   0,
-        0,    0,    6,    5,    3,    3,    1,    5,    3,    3,
-        4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
-        4,    0,    1,    3,    4,    4,    4,    4,    3,    4,
-        4,    4,    4,    4,    4,    4,    4,    4,    0,    0,
-        4,    4,    4,    4,    4,    4,    4,    4,    4,    2,
-        4,    4,    4,    4,    4,    4,    4,    4,    4,    0
+        0,    0,    6,    5,    5,    3,    5,    1,    4,    4,
+        4,    3,    4,    4,    4,    0,    2,    0,    1,    4,
+        4,    4,    4,    4,    3,    4,    4,    0,    3,    3,
+        3,    3,    0
     } ;
 
 static yyconst flex_int32_t yy_ec[256] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    2,
-        3,    4,    5,    6,    7,    8,    9,   10,   10,   10,
-       10,   10,   10,   10,   10,   10,   10,   11,   12,   13,
-       14,   15,    1,    1,   16,   16,   16,   16,   16,   16,
-       16,   16,   16,   16,   16,   16,   16,   16,   16,   16,
-       16,   16,   16,   16,   16,   16,   16,   16,   16,   16,
-        1,    1,    1,    1,    1,    1,   17,   18,   19,   20,
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+        1,    1,    1,    1,    3,    4,    1,    1,    1,    5,
+        6,    1,    1,    7,    1,    8,    1,    9,    9,    9,
+        9,    9,    9,    9,    9,    9,    9,   10,    1,    1,
+        1,    1,    1,    1,   11,   11,   11,   11,   11,   11,
+       11,   11,   11,   11,   11,   11,   11,   11,   11,   11,
+       11,   11,   11,   11,   11,   11,   11,   11,   11,   11,
+        1,    1,    1,    1,    1,    1,   12,   13,   11,   14,
 
-       21,   22,   23,   24,   25,   16,   16,   26,   16,   27,
-       28,   29,   16,   30,   31,   32,   33,   16,   34,   16,
-       16,   16,    1,    1,    1,    1,    1,    1,    1,    1,
+       15,   11,   11,   11,   16,   17,   11,   18,   11,   19,
+       20,   11,   21,   22,   23,   24,   25,   11,   26,   11,
+       11,   11,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -411,70 +409,53 @@ static yyconst flex_int32_t yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static yyconst flex_int32_t yy_meta[35] =
+static yyconst flex_int32_t yy_meta[27] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    2,
-        1,    1,    1,    1,    1,    2,    2,    2,    2,    2,
+        1,    1,    1,    1,    1,    1,    1,    1,    2,    1,
         2,    2,    2,    2,    2,    2,    2,    2,    2,    2,
-        2,    2,    2,    2
+        2,    2,    2,    2,    2,    2
     } ;
 
-static yyconst flex_int16_t yy_base[63] =
+static yyconst flex_int16_t yy_base[36] =
     {   0,
-        0,    0,   93,   94,   94,   88,   81,   76,   21,   75,
-        0,   67,   20,   59,   12,   18,   66,   55,   63,   59,
-       17,   78,   71,   94,    0,   57,   53,   51,    0,   46,
-       56,   43,   54,   45,   55,   50,   45,   44,   64,   40,
-       42,   40,   34,   43,   44,   42,   34,   34,   27,   94,
-       31,   25,   35,   34,   33,   33,   19,   16,   22,   94,
-       40,   49
+        0,    0,   57,   58,   54,   58,   40,   45,    0,   13,
+       38,    0,    3,   30,   12,   49,   58,   31,   40,    0,
+       34,   33,   25,   29,    0,   16,   26,   17,   20,   17,
+       58,   10,   58,   42,   32
     } ;
 
-static yyconst flex_int16_t yy_def[63] =
+static yyconst flex_int16_t yy_def[36] =
     {   0,
-       60,    1,   60,   60,   60,   60,   60,   60,   60,   60,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   61,
-       61,   62,   60,   60,   61,   61,   61,   61,   61,   61,
-       61,   61,   61,   61,   61,   61,   61,   61,   62,   62,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,   60,
-       61,   61,   61,   61,   61,   61,   61,   61,   61,    0,
-       60,   60
+       33,    1,   33,   33,   34,   33,   33,   33,   35,   35,
+       35,   35,   35,   35,   35,   34,   33,   33,   33,   35,
+       35,   35,   35,   35,   35,   35,   35,   33,   35,   35,
+       33,   35,    0,   33,   33
     } ;
 
-static yyconst flex_int16_t yy_nxt[129] =
+static yyconst flex_int16_t yy_nxt[85] =
     {   0,
-        4,    5,    5,    5,    5,    5,    5,    5,    6,    7,
-        8,    5,    9,    5,   10,   11,   11,   12,   13,   14,
-       15,   11,   11,   11,   16,   11,   11,   17,   18,   19,
-       11,   20,   11,   21,   24,   24,   27,   30,   31,   29,
-       37,   25,   29,   40,   32,   59,   38,   28,   50,   39,
-       39,   58,   57,   29,   29,   56,   29,   29,   55,   54,
-       29,   29,   53,   29,   52,   29,   51,   40,   49,   48,
-       47,   46,   45,   29,   29,   29,   44,   43,   42,   41,
-       23,   40,   36,   35,   34,   33,   29,   26,   24,   24,
-       23,   22,   60,    3,   60,   60,   60,   60,   60,   60,
-
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
-       60,   60,   60,   60,   60,   60,   60,   60
+        4,    4,    5,    6,    6,    6,    6,    7,    8,    6,
+        9,   10,   11,    9,    9,    9,   12,   13,    9,   14,
+        9,    9,   15,    9,    9,    9,   21,   24,   25,   26,
+       31,   22,   32,   20,   25,   25,   27,   25,   25,   30,
+       31,   25,   16,   16,   25,   25,   25,   29,   19,   28,
+       17,   25,   23,   19,   18,   17,   33,    3,   33,   33,
+       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
+       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
+       33,   33,   33,   33
     } ;
 
-static yyconst flex_int16_t yy_chk[129] =
+static yyconst flex_int16_t yy_chk[85] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    9,    9,   13,   15,   15,   16,
-       21,   61,   59,   40,   16,   58,   21,   13,   40,   62,
-       62,   57,   56,   55,   54,   53,   52,   51,   49,   48,
-       47,   46,   45,   44,   43,   42,   41,   39,   38,   37,
-       36,   35,   34,   33,   32,   31,   30,   28,   27,   26,
-       23,   22,   20,   19,   18,   17,   14,   12,   10,    8,
-        7,    6,    3,   60,   60,   60,   60,   60,   60,   60,
-
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
-       60,   60,   60,   60,   60,   60,   60,   60,   60,   60,
-       60,   60,   60,   60,   60,   60,   60,   60
+        1,    1,    1,    1,    1,    1,   10,   13,   13,   15,
+       28,   10,   30,   35,   32,   29,   15,   15,   27,   26,
+       28,   30,   34,   34,   24,   23,   22,   21,   19,   18,
+       16,   14,   11,    8,    7,    5,    3,   33,   33,   33,
+       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
+       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
+       33,   33,   33,   33
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -491,22 +472,22 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "pl0-vector.l"
-#line 2 "pl0-vector.l"
+#line 1 "asm.l"
+#line 2 "asm.l"
 // Code to go before the code generated by flex.
 #include "src/lib/vector.h"
 #include "src/lib/lexer.h"
-#include "src/pl0.h"
+#include "src/asm.h"
 
-struct vector *pl0Tokens;
-char *pl0Source;
+struct vector *tokenVector;
+char *sourceCode;
 
 // Adds a token to the vector of tokens that readPL0Tokens returns.
 void addToken(char *type, char *token) {
     // We need to make copies of the strings because flex might later change
     // the contents of the string that yytext points to, so we want to keep the
     // current state of the string when addToken was called.
-    pushLiteral(pl0Tokens, struct token, {strdup(type), strdup(token)});
+    pushLiteral(tokenVector, struct token, {strdup(type), strdup(token)});
 }
 
 #define ECHO // Stop the generated lexer code from outputing anything.
@@ -515,17 +496,17 @@ void addToken(char *type, char *token) {
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define YY_INPUT(buf, num_read, max_size)\
 {\
-    int length = strlen(pl0Source);\
+    int length = strlen(sourceCode);\
     if (length == 0) {\
         num_read = YY_NULL;\
     } else {\
         num_read = min(length, max_size);\
-        memcpy(buf, pl0Source, num_read);\
-        pl0Source += num_read;\
+        memcpy(buf, sourceCode, num_read);\
+        sourceCode += num_read;\
     }\
 }
 /* Definitions for use in rules section below. */
-#line 529 "lex.yy.c"
+#line 510 "lex.yy.c"
 
 #define INITIAL 0
 
@@ -707,11 +688,11 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 40 "pl0-vector.l"
+#line 40 "asm.l"
 
     /* Rules section. */
 
-#line 715 "lex.yy.c"
+#line 696 "lex.yy.c"
 
 	if ( !(yy_init) )
 		{
@@ -764,13 +745,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 61 )
+				if ( yy_current_state >= 34 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 			++yy_cp;
 			}
-		while ( yy_base[yy_current_state] != 94 );
+		while ( yy_base[yy_current_state] != 58 );
 
 yy_find_action:
 		yy_act = yy_accept[yy_current_state];
@@ -796,31 +777,31 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 43 "pl0-vector.l"
+#line 43 "asm.l"
 addToken("number-token", yytext);
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 44 "pl0-vector.l"
+#line 44 "asm.l"
 /* Ignore comments. */
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 45 "pl0-vector.l"
+#line 45 "asm.l"
 addToken(yytext, yytext); /* Tokens that don't have any special information associated with them, unlike numbers and identifiers. */
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 46 "pl0-vector.l"
+#line 46 "asm.l"
 addToken("identifier-token", yytext);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 48 "pl0-vector.l"
+#line 48 "asm.l"
 ECHO;
 	YY_BREAK
-#line 824 "lex.yy.c"
+#line 805 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1112,7 +1093,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 61 )
+			if ( yy_current_state >= 34 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -1140,11 +1121,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 61 )
+		if ( yy_current_state >= 34 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-	yy_is_jam = (yy_current_state == 60);
+	yy_is_jam = (yy_current_state == 33);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -1814,21 +1795,21 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 48 "pl0-vector.l"
+#line 48 "asm.l"
 
 
 // Code to go after the code generated by flex.
 
-// Generate a function that takes a string of PL/0 source code uses the code
+// Generate a function that takes a string of assembly code uses the code
 // generated by flex to read the string and make a vector of token structs.
-struct vector *readPL0Tokens(char *source) {
+struct vector *readAssembly(char *source) {
     // Assign the argument and result to global variables so that the code
     // generated by flex can access them.
-    pl0Source = source;
-    pl0Tokens = makeVector(struct token);
+    sourceCode = source;
+    tokenVector = makeVector(struct token);
 
     yylex();
 
-    return pl0Tokens;
+    return tokenVector;
 }
 

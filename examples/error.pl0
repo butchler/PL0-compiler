@@ -1,7 +1,0 @@
-const a = 5;
-int x, y;
-begin
-    read x;
-    y := x * a + 1
-    write y;
-end.

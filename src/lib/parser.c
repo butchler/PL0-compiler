@@ -17,7 +17,17 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
 
     clearParserErrors();
 
-    return parseVariable(startVariable, 0);
+    struct parseTree result = parseVariable(startVariable, 0);
+
+    // Make sure that we parsed all of the tokens.
+    assert(!(result.numTokens > tokens->length));
+    if (result.numTokens != tokens->length) {
+        addParserError(format("Trailing tokens after input, starting at '%s'",
+                get(struct token, tokens, result.numTokens).token), result.numTokens - 1);
+        result.numTokens = -1;
+    }
+
+    return result;
 
     // Try to parse the given variable starting at the given index in the
     // token list.
@@ -58,16 +68,6 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
             if (strcmp(varOrTerminal, "nothing") == 0)
                 continue;
 
-            // Return an error if we hit end of input before parsing is done.
-            if (index >= tokens->length) {
-                    addParserError(
-                        format("Expected '%s' but got end of input while parsing %s.",
-                            varOrTerminal, rule.variable),
-                        index);
-                    // TODO: Free children before return.
-                    return errorTree(rule.variable, children);
-            }
-
             if (isVariable(varOrTerminal)) {
                 // Try to parse the variable, and if it matches, go to the next
                 // token after all of the tokens that the variable matched. If
@@ -81,6 +81,16 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                 push(children, child);
                 index += child.numTokens;
             } else /* varOrTerminal is a terminal */ {
+                // Return an error if we hit end of input before parsing is done.
+                if (index >= tokens->length) {
+                    addParserError(
+                        format("Expected '%s' but got end of input while parsing %s.",
+                            varOrTerminal, rule.variable),
+                        index);
+                    // TODO: Free children before return.
+                    return errorTree(rule.variable, children);
+                }
+
                 // If the current token is the same type as the token that the
                 // production rule expects, add it to the parse tree and go to
                 // the next token. Otherwise, return an error.

@@ -65,16 +65,17 @@ struct vector
 // pushLiteral puts the local variable "literal" in it's own scope so that it
 // can't conflict with any other variables.
 //#define pushLiteral(vector, type, value) { type literal = value; push(vector, literal); }
-// Need to use variable arguments to pass the value to pushLiteral, because the
-// value could be a struct literal, and have commands in it. For example:
-// pushLiteral(vector, struct something, {"string", NULL}).
+// Need to use variable length arguments to pass the value to pushLiteral,
+// because the value could be a struct literal, and have commands in it. For
+// example: pushLiteral(vector, struct something, {"string", NULL}).
 #define pushLiteral(vector, type, ...) { type literal = __VA_ARGS__; push(vector, literal); }
 #define set(vector, index, item) vector_set(vector, index, (void*)(&item))
 #define get(type, vector, index) (*(type*)vector_get(vector, index))
 #define freeVector(vector) vector_free(vector)
 // Executes the given code for each item in the vector, using the given
 // variable names to hold the current index and current item's value.
-#define forVector(vector, indexVariable, type, itemVariable, ...) {\
+#define forVector(vector, indexVariable, type, itemVariable, ...)\
+if (vector != NULL) {\
     int indexVariable;\
     for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
         type itemVariable = get(type, vector, indexVariable);\
@@ -85,7 +86,8 @@ struct vector
 // the value stored in the vector, instead of the dereferenced value. Useful if
 // you have a vector of structs and want to modify each struct as you iterate
 // through the vector.
-#define forVectorPointers(vector, indexVariable, type, itemVariable, ...) {\
+#define forVectorPointers(vector, indexVariable, type, itemVariable, ...)\
+if (vector != NULL) {\
     int indexVariable;\
     for (indexVariable = 0; indexVariable < vector->length; indexVariable++) {\
         type *itemVariable = (type*)vector_get(vector, indexVariable);\
@@ -104,5 +106,16 @@ void vector_free(struct vector *vector);
 
 // Experimental:
 int vector_find(struct vector *vector, void *value);
+#define pushLiterals(vector, type, ...) {\
+    type items[] = {\
+        __VA_ARGS__\
+    };\
+\
+    int length = sizeof (items) / sizeof (type);\
+    int i;\
+    for (i = 0; i < length; i++) {\
+        push(vector, items[i]);\
+    }\
+}
 
 #endif
