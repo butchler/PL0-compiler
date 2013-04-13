@@ -13,7 +13,7 @@ struct grammar getPL0Grammar() {
     struct grammar grammar = (struct grammar){makeVector(struct rule)};
     addRule(grammar, "@program", "@block .");
 
-    addRule(grammar, "@block", "@const-declaration @var-declaration @statement");
+    addRule(grammar, "@block", "@const-declaration @var-declaration @procedure-declaration @statement");
 
     addRule(grammar, "@const-declaration", "const @constants ;");
     addRule(grammar, "@const-declaration", "nothing");
@@ -27,15 +27,23 @@ struct grammar getPL0Grammar() {
     addRule(grammar, "@vars", "@var");
     addRule(grammar, "@var", "@identifier");
 
+    addRule(grammar, "@procedure-declaration", "@procedures");
+    addRule(grammar, "@procedures", "@procedure @procedures");
+    addRule(grammar, "@procedures", "nothing");
+    addRule(grammar, "@procedure", "procedure @identifier ; @block ;");
+
     addRule(grammar, "@statement", "@read-statement");
     addRule(grammar, "@statement", "@write-statement");
     addRule(grammar, "@statement", "@assignment");
     addRule(grammar, "@statement", "@if-statement");
     addRule(grammar, "@statement", "@while-statement");
     addRule(grammar, "@statement", "@begin-block");
+    addRule(grammar, "@statement", "@call-statement");
     addRule(grammar, "@statement", "nothing");
 
     addRule(grammar, "@assignment", "@identifier := @expression");
+
+    addRule(grammar, "@call-statement", "call @identifier");
 
     addRule(grammar, "@begin-block", "begin @statements end");
     addRule(grammar, "@statements", "@statement ; @statements");

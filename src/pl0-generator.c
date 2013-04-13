@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#define STACK_FRAME_SIZE 4
+
 // A symbol can be a variable name or a procedure name. We need to keep track
 // of its lexical level so we know what code can access it, and we need to keep
 // track of its address so we can load its value.
@@ -23,9 +25,10 @@ enum { VARIABLE = 1, CONSTANT, PROCEDURE };
 // Used in the generate function to keep track of the current state.
 struct generatorState {
     struct vector *symbols;   // The symbol table.
-    int currentAddress;   // The current code address.
+    //int currentAddress;   // The current code address.
     int currentLevel;     // The current lexical level.
     struct vector *instructions;   // The instructions that have been generated so far.
+    struct generatorState *parentState;
 };
 
 // Error fucntions.
@@ -43,6 +46,9 @@ void generate_var(struct parseTree tree, struct generatorState *state);
 void generate_constDeclaration(struct parseTree tree, struct generatorState *state);
 void generate_constants(struct parseTree tree, struct generatorState *state);
 void generate_constant(struct parseTree tree, struct generatorState *state);
+void generate_procedureDeclaration(struct parseTree tree, struct generatorState *state);
+void generate_procedures(struct parseTree tree, struct generatorState *state);
+void generate_procedure(struct parseTree tree, struct generatorState *state);
 void generate_statement(struct parseTree tree, struct generatorState *state);
 void generate_statements(struct parseTree tree, struct generatorState *state);
 void generate_beginBlock(struct parseTree tree, struct generatorState *state);
@@ -50,6 +56,7 @@ void generate_readStatement(struct parseTree tree, struct generatorState *state)
 void generate_writeStatement(struct parseTree tree, struct generatorState *state);
 void generate_ifStatement(struct parseTree tree, struct generatorState *state);
 void generate_whileStatement(struct parseTree tree, struct generatorState *state);
+void generate_callStatement(struct parseTree tree, struct generatorState *state);
 void generate_assignment(struct parseTree tree, struct generatorState *state);
 void generate_condition(struct parseTree tree, struct generatorState *state);
 void generate_relationalOperator(struct parseTree tree, struct generatorState *state);
@@ -71,6 +78,7 @@ void addStoreInstruction(struct generatorState *state, struct parseTree identifi
 void addVariable(struct generatorState *state, struct parseTree identifierTree);
 void addConstant(struct generatorState *state, struct parseTree identifierTree,
         struct parseTree numberTree);
+void addProcedure(struct generatorState *state, struct parseTree identifierTree, int address);
 struct symbol getSymbol(struct generatorState *state, char *name);
 
 // Functions used by addInstruction.
@@ -124,6 +132,9 @@ void generate(struct parseTree tree, struct generatorState *state) {
     else if (is("@const-declaration")) call(generate_constDeclaration);
     else if (is("@constants")) call(generate_constants);
     else if (is("@constant")) call(generate_constant);
+    else if (is("@procedure-declaration")) call(generate_procedureDeclaration);
+    else if (is("@procedures")) call(generate_procedures);
+    else if (is("@procedure")) call(generate_procedure);
     else if (is("@statement")) call(generate_statement);
     else if (is("@begin-block")) call(generate_beginBlock);
     else if (is("@statements")) call(generate_statements);
@@ -131,6 +142,7 @@ void generate(struct parseTree tree, struct generatorState *state) {
     else if (is("@write-statement")) call(generate_writeStatement);
     else if (is("@if-statement")) call(generate_ifStatement);
     else if (is("@while-statement")) call(generate_whileStatement);
+    else if (is("@call-statement")) call(generate_callStatement);
     else if (is("@assignment")) call(generate_assignment);
     else if (is("@condition")) call(generate_condition);
     else if (is("@rel-op")) call(generate_relationalOperator);
@@ -155,8 +167,10 @@ void generate_program(struct parseTree tree, struct generatorState *state) {
 void generate_block(struct parseTree tree, struct generatorState *state) {
     assert(hasChild(tree, "@statement"));
 
-    generate(getChild(tree, "@var-declaration"), state);
+    addInstruction(state, "inc", 0, STACK_FRAME_SIZE);
     generate(getChild(tree, "@const-declaration"), state);
+    generate(getChild(tree, "@var-declaration"), state);
+    generate(getChild(tree, "@procedure-declaration"), state);
     generate(getChild(tree, "@statement"), state);
 }
 
@@ -214,6 +228,38 @@ void generate_constant(struct parseTree tree, struct generatorState *state) {
     addConstant(state, getChild(tree, "@identifier"), getChild(tree, "@number"));
 }
 
+void generate_procedureDeclaration(struct parseTree tree, struct generatorState *state) {
+    if (hasChild(tree, "@procedures") && hasChild(getChild(tree, "@procedures"), "@procedure")) {
+        addInstruction(state, "jmp", -1, -1);
+        int jmpInstruction = state->instructions->length - 1;
+        generate(getChild(tree, "@procedures"), state);
+        int afterProcedures = state->instructions->length;
+
+        struct instruction jmpAfterProcedures = makeInstruction("jmp", 0, afterProcedures);
+        set(state->instructions, jmpInstruction, jmpAfterProcedures);
+    }
+}
+
+void generate_procedures(struct parseTree tree, struct generatorState *state) {
+    generate(getChild(tree, "@procedure"), state);
+    generate(getChild(tree, "@procedures"), state);
+}
+
+void generate_procedure(struct parseTree tree, struct generatorState *state) {
+    assert(hasChild(tree, "@identifier") && hasChild(tree, "@block"));
+
+    addProcedure(state, getChild(tree, "@identifier"), state->instructions->length);
+
+    struct generatorState *procedureState = makeGeneratorState();
+    procedureState->currentLevel = state->currentLevel + 1;
+    procedureState->parentState = state;
+    procedureState->instructions = state->instructions;
+    generate(getChild(tree, "@block"), procedureState);
+    addInstruction(procedureState, "opr", 0, 0);
+
+    //vector_concat(state->instructions, procedureState->instructions);
+}
+
 void generate_statement(struct parseTree tree, struct generatorState *state) {
     //assert(hasChild("@if-statement") || hasChild("@assignment") || hasChild("@while-statement") || hasChild("@begin-block") || hasChild("@read-statement") || hasChild("@write-statement"));
 
@@ -252,6 +298,16 @@ void generate_assignment(struct parseTree tree, struct generatorState *state) {
 
     generate(getChild(tree, "@expression"), state);
     addStoreInstruction(state, getChild(tree, "@identifier"));
+}
+
+void generate_callStatement(struct parseTree tree, struct generatorState *state) {
+    assert(hasChild(tree, "@identifier"));
+
+    struct parseTree identifier = getChild(tree, "@identifier");
+    char *procedureName = getFirstChild(identifier).name;
+    struct symbol procedure = getSymbol(state, procedureName);
+    int levelsBack = state->currentLevel - procedure.level;
+    addInstruction(state, "cal", levelsBack, procedure.address);
 }
 
 /*void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
@@ -303,7 +359,7 @@ void generate_ifStatement(struct parseTree tree, struct generatorState *state) {
         generate(getLastChild(tree, "@statement"), state);
         int afterElse = state->instructions->length;
 
-        // Put the correct addresses in the jmp instructions.
+        // Put the correct addresses in the jump instructions.
         struct instruction jpcInstruction = makeInstruction("jpc", 0, afterIf);
         set(state->instructions, jpcIndex, jpcInstruction);
         struct instruction jmpInstruction = makeInstruction("jmp", 0, afterElse);
@@ -457,6 +513,7 @@ struct generatorState *makeGeneratorState() {
     state->symbols = makeVector(struct symbol);
     state->currentLevel = 0;
     state->instructions = makeVector(struct instruction);
+    state->parentState = NULL;
 
     return state;
 }
@@ -498,20 +555,22 @@ void addLoadInstruction(struct generatorState *state, struct parseTree identifie
     char *name = getToken(identifier);
     struct symbol symbol = getSymbol(state, name);
 
+    int levelsBack = state->currentLevel - symbol.level;
     if (symbol.type == PROCEDURE)
         addGeneratorError("Cannot take value of procedure.");
     else if (symbol.type == VARIABLE)
-        addInstruction(state, "lod", symbol.level, symbol.address);
+        addInstruction(state, "lod", levelsBack, symbol.address);
     else if (symbol.type == CONSTANT)
         addInstruction(state, "lit", 0, symbol.constantValue);
 }
 void addStoreInstruction(struct generatorState *state, struct parseTree identifier) {
     char *name = getToken(identifier);
     struct symbol symbol = getSymbol(state, name);
+    int levelsBack = state->currentLevel - symbol.level;
     if (symbol.type == PROCEDURE || symbol.type == CONSTANT)
         addGeneratorError("Cannot store into a constant or procedure.");
     else if (symbol.type == VARIABLE)
-        addInstruction(state, "sto", symbol.level, symbol.address);
+        addInstruction(state, "sto", levelsBack, symbol.address);
 }
 
 void addVariable(struct generatorState *state, struct parseTree identifierTree) {
@@ -519,6 +578,8 @@ void addVariable(struct generatorState *state, struct parseTree identifierTree) 
     // TODO: Will the position in the symbol table will always correspond to
     // the correct address for the symbol in each lexical level?
     int address = state->symbols->length;
+    // Account for data put on stack by CAL instruction.
+    address += STACK_FRAME_SIZE;
     struct symbol symbol = {name, VARIABLE, state->currentLevel, address, 0};
 
     push(state->symbols, symbol);
@@ -535,15 +596,24 @@ void addConstant(struct generatorState *state, struct parseTree identifierTree,
 
     push(state->symbols, symbol);
 }
+void addProcedure(struct generatorState *state, struct parseTree identifierTree, int address) {
+    char *name = getToken(identifierTree);
+    struct symbol symbol = {name, PROCEDURE, state->currentLevel, address, 0};
+    push(state->symbols, symbol);
+}
 struct symbol getSymbol(struct generatorState *state, char *name) {
     // TODO: Check for symbols in higher lexical levels.
     forVector(state->symbols, i, struct symbol, symbol,
             if (strcmp(symbol.name, name) == 0)
                 return symbol;);
 
-    addGeneratorError(format("Could not find symbol '%s'.", name));
+    if (state->parentState == NULL) {
+        addGeneratorError(format("Could not find symbol '%s'.", name));
 
-    return (struct symbol){NULL, 0, 0, 0, 0};
+        return (struct symbol){NULL, -1, -1, -1, -1};
+    } else {
+        return getSymbol(state->parentState, name);
+    }
 }
 
 // Error functions
