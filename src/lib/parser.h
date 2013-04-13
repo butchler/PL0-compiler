@@ -29,7 +29,7 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar, char *star
 
 // Returns a parse tree that indicates an error occurred, with the given error
 // message as its name.
-struct parseTree errorTree();
+struct parseTree errorTree(char *name, struct vector *children);
 // Returns tree if the given tree is a tree that was produced by errorTree().
 int isParseTreeError(struct parseTree tree);
 

@@ -44,20 +44,18 @@ int main(int argc, char **argv) {
 
     // Parse tokens.
     struct parseTree tree = parsePL0Tokens(tokens);
-    if (isParseTreeError(tree)) {
-        printf("Errors while parsing program:\n%s\n\n", getParserErrors());
-        // TODO: Make parser return useful information on errors.
-        /*printf("This is what the parser was able to parse:\n");
-        printParseTree(tree);
-        printf("\n");*/
-        return 1;
-    } 
 
     // Print parse tree.
     if (verbose >= 4) {
         printf("Parse tree:\n");
         printParseTree(tree);
         printf("\n");
+    }
+
+    // Check for parser errors.
+    if (isParseTreeError(tree)) {
+        printf("Errors while parsing program:\n%s\n\n", getParserErrors());
+        return 1;
     }
 
     // Generate code.

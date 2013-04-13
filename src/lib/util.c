@@ -120,6 +120,8 @@ char *joinStrings(struct vector *strings, char *separator) {
         char *result = format("%s%s%s", firstStrings, separator, lastString);
 
         free(firstStrings);
+
+        return result;
     }
 
     // join modifies the vector given to it, so make a copy so we don't modify

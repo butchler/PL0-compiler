@@ -1,9 +1,10 @@
 const TRUE = 1, FALSE = 0;
 int x;
 begin
-    /* A simple inverter.
-     * Outputs true if x is false, and false if x is true. */
+    /* Print true if x is odd, and false otherwise. */
     read x;
-    if x = FALSE then write TRUE
-    else write FALSE;
+    if odd x then
+        write TRUE;
+    else
+        write FALSE;
 end.

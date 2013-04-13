@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+// The number of memory locations in the stack frame that the CAL instruction
+// creates.
 #define STACK_FRAME_SIZE 4
 
 // A symbol can be a variable name or a procedure name. We need to keep track

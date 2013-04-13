@@ -11,32 +11,38 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
         char *startVariable) {
     // The auto keyword is required when declaring nested functions without
     // defining them (http://gcc.gnu.org/onlinedocs/gcc/Nested-Functions.html).
-    auto struct parseTree parseVariable(int index, char *currentVariable);
+    auto struct parseTree parseVariable(char *variable, int index);
     auto struct parseTree parseRule(struct rule rule, int index);
     auto int isVariable(char *string);
 
     clearParserErrors();
 
-    return parseVariable(0, startVariable);
+    return parseVariable(startVariable, 0);
 
     // Try to parse the given variable starting at the given index in the
     // token list.
-    struct parseTree parseVariable(int index, char *currentVariable) {
+    struct parseTree parseVariable(char *variable, int index) {
+        // Keep track of failures so that we can return more information if the
+        // parser fails to parse the tokens.
+        struct vector *errorChildren = makeVector(struct parseTree);
+
         // For each production rule in the grammar.
         forVector(grammar.rules, i, struct rule, rule,
                 // If it's a production rule for the current variable.
-                if (strcmp(rule.variable, currentVariable) == 0) {
+                if (strcmp(rule.variable, variable) == 0) {
                     // Try to parse the production rule.
                     struct parseTree result = parseRule(rule, index);
 
                     // Return on the first production rule that succeeds.
                     if (!isParseTreeError(result))
                         return result;
+                    else
+                        push(errorChildren, result);
                 });
 
         // If none of the rules we found worked, or we didn't find any rules,
         // return an error.
-        return errorTree();
+        return errorTree(variable, errorChildren);
     }
 
     // Try to parse the given production rule at the f
@@ -59,7 +65,7 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                             varOrTerminal, rule.variable),
                         index);
                     // TODO: Free children before return.
-                    return errorTree();
+                    return errorTree(rule.variable, children);
             }
 
             if (isVariable(varOrTerminal)) {
@@ -68,9 +74,9 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                 // it doesn't match, return an error.
                 char *variableName = varOrTerminal;
 
-                struct parseTree child = parseVariable(index, variableName);
+                struct parseTree child = parseVariable(variableName, index);
                 if (isParseTreeError(child))
-                    return errorTree();
+                    return errorTree(rule.variable, children);
 
                 push(children, child);
                 index += child.numTokens;
@@ -90,7 +96,7 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                             varOrTerminal, currentToken.token, rule.variable),
                         index);
                     // TODO: Free children before return.
-                    return errorTree();
+                    return errorTree(rule.variable, children);
                 }
             });
 
@@ -107,8 +113,8 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
     }
 }
 
-struct parseTree errorTree() {
-    return (struct parseTree){NULL, NULL, -1};
+struct parseTree errorTree(char *name, struct vector *children) {
+    return (struct parseTree){name, children, -1};
 }
 
 int isParseTreeError(struct parseTree tree) {
@@ -122,7 +128,7 @@ struct parseTree getChild(struct parseTree parent, char *childName) {
         if (strcmp(child.name, childName) == 0)
             return child;);
 
-    return errorTree();
+    return errorTree(NULL, NULL);
 }
 
 struct parseTree getLastChild(struct parseTree parent, char *childName) {
@@ -135,7 +141,7 @@ struct parseTree getLastChild(struct parseTree parent, char *childName) {
             return child;
     }
 
-    return errorTree();
+    return errorTree(NULL, NULL);
 }
 
 int hasChild(struct parseTree parent, char *childName) {
@@ -160,7 +166,7 @@ struct parseTree getFirstChild(struct parseTree tree) {
     if (tree.children != NULL && tree.children->length > 0)
         return get(struct parseTree, tree.children, 0);
     else
-        return errorTree();
+        return errorTree(NULL, NULL);
 }
 
 void freeParseTree(struct parseTree tree) {
@@ -211,8 +217,9 @@ void clearParserErrors() {
 char *getParserErrors() {
     if (parserErrors == NULL)
         return NULL;
-    else
+    else {
         return joinStrings(parserErrors, "\n");
+    }
 }
 
 void printParseTree(struct parseTree root) {
