@@ -434,20 +434,28 @@ void generate_term(struct parseTree tree, struct generatorState *state) {
     if (hasChild(tree, "@multiply-or-divide")) {
         assert(hasChild(tree, "@term"));
 
-        generate(getChild(tree, "@term"), state);
+        /*generate(getChild(tree, "@term"), state);
+        generate(getChild(tree, "@multiply-or-divide"), state);*/
+
+        // We must compute the multiplications and divisions left-to-right to
+        // adhere to order of operations. (The above code evalues right-to-left.)
+        struct parseTree term = getChild(tree, "@term");
+        generate(getChild(term, "@factor"), state);
         generate(getChild(tree, "@multiply-or-divide"), state);
+        generate(getChild(term, "@term"), state);
+        generate(getChild(term, "@multiply-or-divide"), state);
     }
 }
 
 void generate_multiplyOrDivide(struct parseTree tree, struct generatorState *state) {
+    assert(hasChild(tree, "*") || hasChild(tree, "/"));
+
     char *starOrSlash = getFirstChild(tree).name;
 
     if (strcmp(starOrSlash, "*") == 0)
         addInstruction(state, "opr", 0, 4);
     else if (strcmp(starOrSlash, "/") == 0)
         addInstruction(state, "opr", 0, 5);
-    else
-        assert(0 /* Expected * or / inside multiply-or-divide. */);
 }
 
 void generate_factor(struct parseTree tree, struct generatorState *state) {

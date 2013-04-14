@@ -1,0 +1,8 @@
+const c = 5;
+int x;
+begin
+    x := (100/((2*c / 3) + 1));
+    write x;   /* Expect 25 to be printed. */
+    x := 10 / 2 * 3 + 3 - 5 * 2 / 5;
+    write x;   /* Expect 16 to be printed. */
+end.
