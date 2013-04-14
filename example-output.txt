@@ -1,0 +1,137 @@
+Result of running './compiler examples/if-else.pl0 4' (4 is the highest verbosity level):
+=========================================================================================
+
+Source code:
+const TRUE = 1, FALSE = 0;
+int x;
+begin
+    /* Print true if x is odd, and false otherwise. */
+    read x;
+    if odd x then
+        write TRUE
+    else
+        write FALSE;
+end.
+
+Tokens:
+const identifier-token TRUE = number-token 1 , identifier-token FALSE = number-token 0 ; int identifier-token x ; begin read identifier-token x ; if odd identifier-token x then write identifier-token TRUE else write identifier-token FALSE ; end . 
+
+Parse tree:
+@program
+    @block
+        @const-declaration
+            const
+            @constants
+                @constant
+                    @identifier
+                        TRUE
+                    =
+                    @number
+                        1
+                ,
+                @constants
+                    @constant
+                        @identifier
+                            FALSE
+                        =
+                        @number
+                            0
+            ;
+        @var-declaration
+            int
+            @vars
+                @var
+                    @identifier
+                        x
+            ;
+        @procedure-declaration
+            @procedures
+        @statement
+            @begin-block
+                begin
+                @statements
+                    @statement
+                        @read-statement
+                            read
+                            @identifier
+                                x
+                    ;
+                    @statements
+                        @statement
+                            @if-statement
+                                if
+                                @condition
+                                    odd
+                                    @expression
+                                        @term
+                                            @factor
+                                                @identifier
+                                                    x
+                                then
+                                @statement
+                                    @write-statement
+                                        write
+                                        @identifier
+                                            TRUE
+                                else
+                                @statement
+                                    @write-statement
+                                        write
+                                        @identifier
+                                            FALSE
+                        ;
+                        @statements
+                            @statement
+                end
+    .
+
+No errors, program is syntactically correct.
+
+Generated instructions:
+  0 inc   0   4  
+  1 inc   0   1  
+  2 read  0   2  
+  3 sto   0   6  
+  4 lod   0   6  
+  5 opr   0   6  
+  6 jpc   0   10 
+  7 lit   0   1  
+  8 write 0   1  
+  9 jmp   0   12 
+ 10 lit   0   0  
+ 11 write 0   1  
+ 12 opr   0   0  
+
+Result of running './vm <(./compiler examples/if-else.pl0)':
+============================================================
+
+Line  OP    L     M     
+0     inc   0     4     
+1     inc   0     1     
+2     sio   0     2     
+3     sto   0     6     
+4     lod   0     6     
+5     opr   0     6     
+6     jpc   0     10    
+7     lit   0     1     
+8     sio   0     1     
+9     jmp   0     12    
+10    lit   0     0     
+11    sio   0     1     
+12    opr   0     0     
+
+Input: 5
+Output: 1
+                              pc    bp    sp    stack
+Initial values                0     1     0     
+0     inc   0     4           1     1     4     0 0 0 0 
+1     inc   0     1           2     1     5     0 0 0 0 0 
+2     sio   0     2           3     1     6     0 0 0 0 0 5 
+3     sto   0     6           4     1     5     0 0 0 0 0 
+4     lod   0     6           5     1     6     0 0 0 0 0 5 
+5     opr   0     6           6     1     6     0 0 0 0 0 1 
+6     jpc   0     10          7     1     5     0 0 0 0 0 
+7     lit   0     1           8     1     6     0 0 0 0 0 1 
+8     sio   0     1           9     1     5     0 0 0 0 0 
+9     jmp   0     12          12    1     5     0 0 0 0 0 
+12    opr   0     0           0     0     0     
