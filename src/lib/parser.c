@@ -58,16 +58,6 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
             if (strcmp(varOrTerminal, "nothing") == 0)
                 continue;
 
-            // Return an error if we hit end of input before parsing is done.
-            if (index >= tokens->length) {
-                    addParserError(
-                        format("Expected '%s' but got end of input while parsing %s.",
-                            varOrTerminal, rule.variable),
-                        index);
-                    // TODO: Free children before return.
-                    return errorTree(rule.variable, children);
-            }
-
             if (isVariable(varOrTerminal)) {
                 // Try to parse the variable, and if it matches, go to the next
                 // token after all of the tokens that the variable matched. If
@@ -81,21 +71,30 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                 push(children, child);
                 index += child.numTokens;
             } else /* varOrTerminal is a terminal */ {
+                // Return an error if we hit end of input before parsing is done.
+                if (index >= tokens->length) {
+                    addParserError(
+                            format("Expected '%s' but got end of input while parsing %s.",
+                                varOrTerminal, rule.variable),
+                            index);
+                    return errorTree(rule.variable, children);
+                }
+
                 // If the current token is the same type as the token that the
                 // production rule expects, add it to the parse tree and go to
                 // the next token. Otherwise, return an error.
                 char *tokenType = varOrTerminal;
                 struct token currentToken = get(struct token, tokens, index);
 
-                if (strcmp(currentToken.tokenType, tokenType) == 0) {
+                // Check if the current token is the same type as the expected token.
+                if (strcmp(currentToken.type, tokenType) == 0) {
                     pushLiteral(children, struct parseTree, {currentToken.token, NULL, 1});
                     index += 1;
                 } else {
                     addParserError(
-                        format("Expected '%s' but got '%s' while parsing %s.",
-                            varOrTerminal, currentToken.token, rule.variable),
+                        format("Expected '%s' but got '%s' while parsing %s (line %d).",
+                            varOrTerminal, currentToken.token, rule.variable, currentToken.line),
                         index);
-                    // TODO: Free children before return.
                     return errorTree(rule.variable, children);
                 }
             });

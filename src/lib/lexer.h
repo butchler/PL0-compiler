@@ -3,8 +3,9 @@
 
 struct token {
 
-   char *tokenType;
+   char *type;
    char *token;
+   int line;
 
 };
 

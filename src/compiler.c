@@ -42,9 +42,9 @@ int main(int argc, char **argv) {
     if (verbosity >= 3) {
         printf("Tokens:\n");
         forVector(tokens, i, struct token, token,
-                printf("%s ", token.tokenType);
-                if (strcmp(token.tokenType, "identifier-token") == 0
-                    || strcmp(token.tokenType, "number-token") == 0)
+                printf("%s ", token.type);
+                if (strcmp(token.type, "identifier-token") == 0
+                    || strcmp(token.type, "number-token") == 0)
                     printf("%s ", token.token););
         printf("\n\n");
     }
