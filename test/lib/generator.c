@@ -1,4 +1,5 @@
 #include "test/lib/generator.h"
+#include "src/pl0.h"
 #include "src/lib/util.h"   // For splitString
 #include <stdio.h>
 #include <assert.h>
@@ -37,14 +38,5 @@ int instructionsEqual(struct vector *instructions, char *expectedInstructions) {
     }
 
     return 1;
-}
-
-void printInstructions(struct vector *instructions) {
-    int i;
-    for (i = 0; i < instructions->length; i++) {
-        struct instruction instruction = get(struct instruction, instructions, i);
-        printf("%s %d %d\n", instruction.opcodeName,
-                instruction.lexicalLevel, instruction.modifier);
-    }
 }
 

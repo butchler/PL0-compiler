@@ -1,0 +1,9 @@
+const TRUE = 1, FALSE = 0;
+int x;
+begin
+    /* A simple inverter.
+     * Outputs true if x is false, and false if x is true. */
+    read x;
+    if x = FALSE then write TRUE;
+    if x <> TRUE then write FALSE;
+end.

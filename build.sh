@@ -1,3 +1,4 @@
 #!/bin/bash
 
-gcc -g -o compiler src/*.c src/lib/*.c test/lib/*.c -I.
+gcc -g -o compiler -I. src/*.c src/lib/*.c -lfl
+
