@@ -9,30 +9,37 @@
 #include <string.h>
 
 int main(int argc, char **argv) {
-    if (argc < 2) {
-        assert(argc >= 1);
+    // Print usage if the wrong number of arguments are given.
+    if (!(argc == 2 || argc == 3)) {
         printf("Usage: %s <PL/0 source code filename> [<verbosity level>]\n", argv[0]);
         return 1;
     }
 
-    int verbose = 0;
-    if (argc >= 3)
-        verbose = atoi(argv[2]);
+    // Set verbosity level.
+    int verbosity = 0;
+    if (argc == 3)
+        verbosity = atoi(argv[2]);
 
     // Read in source code.
     char *sourceCode = readContents(argv[1]);
-    assert(sourceCode != NULL);
+    if (sourceCode == NULL) {
+        fprintf(stderr, "Error reading input file.\n");
+        return 2;
+    }
 
     // Print source code.
-    if (verbose >= 2)
+    if (verbosity >= 2)
         printf("Source code:\n%s\n", sourceCode);
 
     // Read tokens.
     struct vector *tokens = readPL0Tokens(sourceCode);
-    assert(tokens != NULL);
+    if (tokens == NULL) {
+        fprintf(stderr, "Error reading PL/0 tokens.\n");
+        return 3;
+    }
 
     // Print tokens.
-    if (verbose >= 3) {
+    if (verbosity >= 3) {
         printf("Tokens:\n");
         forVector(tokens, i, struct token, token,
                 printf("%s ", token.tokenType);
@@ -46,7 +53,7 @@ int main(int argc, char **argv) {
     struct parseTree tree = parsePL0Tokens(tokens);
 
     // Print parse tree.
-    if (verbose >= 4) {
+    if (verbosity >= 4) {
         printf("Parse tree:\n");
         printParseTree(tree);
         printf("\n");
@@ -55,11 +62,13 @@ int main(int argc, char **argv) {
     // Check for parser errors.
     if (isParseTreeError(tree)) {
         printf("Errors while parsing program:\n%s\n\n", getParserErrors());
-        return 1;
+        return 4;
     }
 
     // Generate code.
     struct vector *instructions = generatePL0(tree);
+
+    // Check if the generator had errors.
     if (getGeneratorErrors() != NULL) {
         printf("The generator encountered errors:\n%s\n\n", getGeneratorErrors());
         if (instructions != NULL) {
@@ -68,15 +77,14 @@ int main(int argc, char **argv) {
             printf("\n");
         }
 
-        return 1;
+        return 5;
     }
 
-    if (verbose >= 1)
+    if (verbosity >= 1)
         printf("No errors, program is syntactically correct.\n\n");
 
     // Print generated code.
-    assert(instructions != NULL);
-    if (verbose >= 1) {
+    if (verbosity >= 1) {
         printf("Generated instructions:\n");
         // Print code with nice opcode names.
         printInstructions(instructions, 1);
