@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 
     // Check for parser errors.
     if (isParseTreeError(tree)) {
-        printf("Errors while parsing program:\n%s\n\n", getParserErrors());
+        fprintf(stderr, "Errors while parsing program:\n%s\n\n", getParserErrors());
         return 4;
     }
 
@@ -70,6 +70,9 @@ int main(int argc, char **argv) {
 
     // Check if the generator had errors.
     if (getGeneratorErrors() != NULL) {
+        // Print to stderr.
+        stdout = stderr;
+
         printf("The generator encountered errors:\n%s\n\n", getGeneratorErrors());
         if (instructions != NULL) {
             printf("This is what the generator was able to generate:\n");
