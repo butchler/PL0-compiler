@@ -1,4 +1,9 @@
 
+# Compile the PL/0 compiler.
+SOURCES = src/*.c src/lib/*.c
+compiler: $(SOURCES)
+	gcc -g -o $@ -Isrc $(SOURCES) -lfl
+
 # Compile and run a PL/0 source file.
 %.pl0: compiler ALWAYS_RUN
 	@#./compiler $@ | ./vm -
@@ -10,9 +15,4 @@
 	bash -c './vm <(./compiler $@)'
 ALWAYS_RUN:
 	@# Forces %.pl0 rules to always run even if all files are up to date.
-
-# Compile the PL/0 compiler.
-SOURCES = src/*.c src/lib/*.c
-compiler: $(SOURCES)
-	gcc -g -o $@ -Isrc $(SOURCES) -lfl
 
