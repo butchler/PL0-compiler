@@ -2,7 +2,7 @@
 # Compiles and runs the given PL/0 program.
 
 pl0File=$1
-compiledCode=`mktemp`
+compiledCode=`mktemp --tmpdir=.`
 
 # Compile PL/0.
 ./compile.sh $pl0File > $compiledCode
