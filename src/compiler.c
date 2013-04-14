@@ -1,8 +1,8 @@
-#include "src/pl0.h"
-#include "src/lib/lexer.h"
-#include "src/lib/parser.h"
-#include "src/lib/vector.h"
-#include "src/lib/util.h"
+#include "pl0.h"
+#include "lib/lexer.h"
+#include "lib/parser.h"
+#include "lib/vector.h"
+#include "lib/util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

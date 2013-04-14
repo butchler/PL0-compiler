@@ -1,8 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include "src/lib/vector.h"
-#include "src/lib/lexer.h"
+#include "lib/vector.h"
+#include "lib/lexer.h"
 
 // A parseTree is basically just a tree of strings.
 struct parseTree {

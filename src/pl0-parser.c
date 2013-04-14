@@ -1,7 +1,7 @@
-#include "src/pl0.h"
-#include "src/lib/lexer.h"
-#include "src/lib/parser.h"
-#include "src/lib/vector.h"
+#include "pl0.h"
+#include "lib/lexer.h"
+#include "lib/parser.h"
+#include "lib/vector.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -77,9 +77,9 @@ struct grammar getPL0Grammar() {
     addRule(grammar, "@factor", "@number");*/
 
     // This is an improved grammar for expressions that behaves more like you
-    // would intuitively expeted expressions to behave. For example, 1 + 2 + 3
-    // is not a valid expression in the other grammar, you would have to do
-    // something like 1 + (2 + 3) instead, but it works with this grammar.
+    // would intuitively expect expressions to behave. For example, 1 + 2 + 3
+    // works with this grammar, but with the other grammar you would have to do
+    // something like 1 + (2 + 3) or (1 + 2) + 3 instead.
     addRule(grammar, "@expression", "@term @add-or-subtract @expression");
     addRule(grammar, "@expression", "@term");
     addRule(grammar, "@add-or-subtract", "+");

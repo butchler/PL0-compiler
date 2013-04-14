@@ -7,10 +7,12 @@ compiledCode=`mktemp`
 # Compile PL/0.
 ./compile.sh $pl0File > $compiledCode
 # Print results of compilation in case there were bugs.
+echo "Compiler output:"
 cat $compiledCode
 echo
 
 # Run compiled code with the VM.
+echo "VM output:"
 ./vm $compiledCode
 
 # Remove compiled code after VM exits.
