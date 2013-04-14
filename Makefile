@@ -1,6 +1,6 @@
 
 # Compile and run a PL/0 source file.
-%.pl0: compiler
+%.pl0: compiler ALWAYS_RUN
 	@#./compiler $@ | ./vm -
 	@# The above doesn't work because we want the VM to be able to read the
 	@# user's input from stdin, and piping sets stdin to the output of the
@@ -8,6 +8,8 @@
 	@# the output of the command, but it's a bash feature, so we need to run the
 	@# whole thing with bash.
 	bash -c './vm <(./compiler $@)'
+ALWAYS_RUN:
+	@# Forces %.pl0 rules to always run even if all files are up to date.
 
 # Compile the PL/0 compiler.
 SOURCES = src/*.c src/lib/*.c
