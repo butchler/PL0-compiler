@@ -1,0 +1,6 @@
+int x;
+begin
+    /* Error: forgetting to put semicolon after statement. */
+    x := 1
+    write x
+end.

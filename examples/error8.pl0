@@ -1,0 +1,10 @@
+int x;
+procedure A;
+    begin
+        x := 1;
+    end;
+begin
+    read x;
+    x := x + A; /* Error: cannot take value of procedure. */
+    write x;
+end.

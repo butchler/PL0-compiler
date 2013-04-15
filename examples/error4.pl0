@@ -1,0 +1,5 @@
+int x;
+begin
+    read x;
+    write x;
+end /* Error: forgetting to put period at end of program. */

@@ -1,0 +1,6 @@
+int x;
+begin
+    /* Error: using = instead of := for assignment. */
+    x = 1;
+    write x
+end.

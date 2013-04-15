@@ -1,0 +1,6 @@
+int x;
+const a = 5; /* Error: putting const-declaration after var-declaration. */
+begin
+    read x;
+    write x;
+end.

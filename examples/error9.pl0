@@ -1,0 +1,7 @@
+const a = 1;
+int x;
+begin
+    read x;
+    a := x + 1; /* Error: cannot assign to constant. */
+    write x;
+end.

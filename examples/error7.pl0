@@ -1,0 +1,10 @@
+int x;
+procedure A;
+    begin
+        x := 1;
+    end /* Error: forgetting semicolon after procedure. */
+begin
+    read x;
+    A;
+    write x;
+end.

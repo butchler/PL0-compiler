@@ -1,0 +1,214 @@
+Here are some examples of error messages produced by the parser and code
+generator.
+
+None of the error handling in the parser is hard coded; all of the messages are
+based on the PL/0 grammar defined in src/pl0-parser.c. On one hand, this is a
+lot less work for the programmer, but it leads to error messages that often
+aren't very clear or helpful.
+
+
+./compiler examples/error1.pl0 2
+================================
+Errors while parsing program:
+Expected ':=' but got '=' while parsing @assignment (line 4).
+Expected ':=' but got '=' while parsing @assignment (line 4).
+
+Source code:
+int x;
+begin
+    /* Error: using = instead of := for assignment. */
+    x = 1;
+    write x
+end.
+
+
+./compiler examples/error2.pl0 2
+================================
+Errors while parsing program:
+Expected '*' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected '/' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected '+' but got 'write' while parsing @add-or-subtract (line 5).
+Expected '-' but got 'write' while parsing @add-or-subtract (line 5).
+Expected '*' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected '/' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected ';' but got 'write' while parsing @statements (line 5).
+Expected '*' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected '/' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected '+' but got 'write' while parsing @add-or-subtract (line 5).
+Expected '-' but got 'write' while parsing @add-or-subtract (line 5).
+Expected '*' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected '/' but got 'write' while parsing @multiply-or-divide (line 5).
+Expected 'end' but got 'write' while parsing @begin-block (line 5).
+
+Source code:
+int x;
+begin
+    /* Error: forgetting to put semicolon after statement. */
+    x := 1
+    write x
+end.
+
+
+./compiler examples/error3.pl0 2
+================================
+Errors while parsing program:
+Expected 'read' but got 'else' while parsing @read-statement (line 8).
+Expected 'write' but got 'else' while parsing @write-statement (line 8).
+Expected 'identifier-token' but got 'else' while parsing @identifier (line 8).
+Expected 'if' but got 'else' while parsing @if-statement (line 8).
+Expected 'if' but got 'else' while parsing @if-statement (line 8).
+Expected 'while' but got 'else' while parsing @while-statement (line 8).
+Expected 'begin' but got 'else' while parsing @begin-block (line 8).
+Expected 'call' but got 'else' while parsing @call-statement (line 8).
+Expected ';' but got 'else' while parsing @statements (line 8).
+Expected 'read' but got 'else' while parsing @read-statement (line 8).
+Expected 'write' but got 'else' while parsing @write-statement (line 8).
+Expected 'identifier-token' but got 'else' while parsing @identifier (line 8).
+Expected 'if' but got 'else' while parsing @if-statement (line 8).
+Expected 'if' but got 'else' while parsing @if-statement (line 8).
+Expected 'while' but got 'else' while parsing @while-statement (line 8).
+Expected 'begin' but got 'else' while parsing @begin-block (line 8).
+Expected 'call' but got 'else' while parsing @call-statement (line 8).
+Expected 'end' but got 'else' while parsing @begin-block (line 8).
+
+Source code:
+const FALSE = 0;
+int x;
+begin
+    read x;
+    if x = 1 then
+        /* Error: putting semicolon after statement in if-else block. */
+        write x;
+    else
+        write FALSE;
+end.
+
+
+./compiler examples/error4.pl0 2
+================================
+Errors while parsing program:
+Expected '.' but got end of input while parsing @program.
+
+Source code:
+int x;
+begin
+    read x;
+    write x;
+end /* Error: forgetting to put period at end of program. */
+
+
+./compiler examples/error5.pl0 2
+================================
+Errors while parsing program:
+Expected ':=' but got 'read' while parsing @assignment (line 3).
+
+Source code:
+int x;
+bein /* Error: misspelling a keyword. */
+    read x;
+    write x;
+end.
+
+
+./compiler examples/error6.pl0 2
+================================
+Errors while parsing program:
+Expected 'procedure' but got 'const' while parsing @procedure (line 2).
+Expected 'read' but got 'const' while parsing @read-statement (line 2).
+Expected 'write' but got 'const' while parsing @write-statement (line 2).
+Expected 'identifier-token' but got 'const' while parsing @identifier (line 2).
+Expected 'if' but got 'const' while parsing @if-statement (line 2).
+Expected 'if' but got 'const' while parsing @if-statement (line 2).
+Expected 'while' but got 'const' while parsing @while-statement (line 2).
+Expected 'begin' but got 'const' while parsing @begin-block (line 2).
+Expected 'call' but got 'const' while parsing @call-statement (line 2).
+Expected '.' but got 'const' while parsing @program (line 2).
+
+Source code:
+int x;
+const a = 5; /* Error: putting const-declaration after var-declaration. */
+begin
+    read x;
+    write x;
+end.
+
+
+./compiler examples/error7.pl0 2
+================================
+Errors while parsing program:
+Expected ';' but got 'begin' while parsing @procedure (line 6).
+
+Source code:
+int x;
+procedure A;
+    begin
+        x := 1;
+    end /* Error: forgetting semicolon after procedure. */
+begin
+    read x;
+    A;
+    write x;
+end.
+
+
+./compiler examples/error8.pl0 2
+================================
+The generator encountered errors:
+Cannot take value of procedure.
+
+Source code:
+int x;
+procedure A;
+    begin
+        x := 1;
+    end;
+begin
+    read x;
+    x := x + A; /* Error: cannot take value of procedure. */
+    write x;
+end.
+
+This is what the generator was able to generate:
+  0 inc   0   4  
+  1 inc   0   1  
+  2 jmp   0   7  
+  3 inc   0   4  
+  4 lit   0   1  
+  5 sto   1   4  
+  6 opr   0   0  
+  7 read  0   2  
+  8 sto   0   4  
+  9 lod   0   4  
+ 10 opr   0   2  
+ 11 sto   0   4  
+ 12 lod   0   4  
+ 13 write 0   1  
+ 14 opr   0   0  
+
+
+./compiler examples/error9.pl0 2
+================================
+The generator encountered errors:
+Cannot store into a constant or procedure.
+
+Source code:
+const a = 1;
+int x;
+begin
+    read x;
+    a := x + 1; /* Error: cannot assign to constant. */
+    write x;
+end.
+
+This is what the generator was able to generate:
+  0 inc   0   4  
+  1 inc   0   1  
+  2 read  0   2  
+  3 sto   0   5  
+  4 lod   0   5  
+  5 lit   0   1  
+  6 opr   0   2  
+  7 lod   0   5  
+  8 write 0   1  
+  9 opr   0   0  
+

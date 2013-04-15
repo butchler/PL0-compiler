@@ -1,0 +1,10 @@
+const FALSE = 0;
+int x;
+begin
+    read x;
+    if x = 1 then
+        /* Error: putting semicolon after statement in if-else block. */
+        write x;
+    else
+        write FALSE;
+end.

@@ -1,0 +1,5 @@
+int x;
+bein /* Error: misspelling a keyword. */
+    read x;
+    write x;
+end.
