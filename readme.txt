@@ -9,6 +9,15 @@ Authors: Nicholas Bardy, Adam Buechler
 * For some examples of error messages that the parser and code generator
   produce, see errors.txt.
 
+* See mips-assembler/ for an example of another compiler that uses the same
+  Context Free Grammar based parser that this compiler uses (to see what I
+  mean, look at src/pl0-parser.c and mips-assembler/src/asm-parser.c; the
+  parsing is done by defining a Context Free Grammar and then passing it to a
+  function that uses the grammar to parse the tokens using a brute
+  force/recursive descent approach). It compiles a small subset of MIPS
+  assembly code into hexadecimal MIPS instructions. I implemented this as an
+  extra credit portion for a project in my Computer Logic & Organization class.  
+
 
 Compiling the compiler:
 -----------------------
