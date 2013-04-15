@@ -1,0 +1,7 @@
+int x;
+begin
+    read x;
+    write x;
+end.
+
+Error: trailing tokens after program.

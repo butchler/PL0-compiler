@@ -212,3 +212,18 @@ This is what the generator was able to generate:
   8 write 0   1  
   9 opr   0   0  
 
+
+./compiler examples/error10.pl0 2
+=================================
+Errors while parsing program:
+Trailing tokens after input, starting at 'Error'
+
+Source code:
+int x;
+begin
+    read x;
+    write x;
+end.
+
+Error: trailing tokens after program.
+

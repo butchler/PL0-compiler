@@ -17,7 +17,17 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
 
     clearParserErrors();
 
-    return parseVariable(startVariable, 0);
+    struct parseTree result = parseVariable(startVariable, 0);
+
+    // Make sure that we parsed all of the tokens.
+    assert(!(result.numTokens > tokens->length));
+    if (result.numTokens != tokens->length) {
+        addParserError(format("Trailing tokens after input, starting at '%s'",
+                get(struct token, tokens, result.numTokens).token), result.numTokens - 1);
+        result.numTokens = -1;
+    }
+
+    return result;
 
     // Try to parse the given variable starting at the given index in the
     // token list.
@@ -74,9 +84,9 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                 // Return an error if we hit end of input before parsing is done.
                 if (index >= tokens->length) {
                     addParserError(
-                            format("Expected '%s' but got end of input while parsing %s.",
-                                varOrTerminal, rule.variable),
-                            index);
+                        format("Expected '%s' but got end of input while parsing %s.",
+                            varOrTerminal, rule.variable),
+                        index);
                     return errorTree(rule.variable, children);
                 }
 
