@@ -1,6 +1,6 @@
-#include "src/lib/parser.h"
-#include "src/lib/lexer.h"
-#include "src/lib/util.h"
+#include "lib/parser.h"
+#include "lib/lexer.h"
+#include "lib/util.h"
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -87,7 +87,6 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                         format("Expected '%s' but got end of input while parsing %s.",
                             varOrTerminal, rule.variable),
                         index);
-                    // TODO: Free children before return.
                     return errorTree(rule.variable, children);
                 }
 
@@ -97,15 +96,15 @@ struct parseTree parse(struct vector *tokens, struct grammar grammar,
                 char *tokenType = varOrTerminal;
                 struct token currentToken = get(struct token, tokens, index);
 
-                if (strcmp(currentToken.tokenType, tokenType) == 0) {
+                // Check if the current token is the same type as the expected token.
+                if (strcmp(currentToken.type, tokenType) == 0) {
                     pushLiteral(children, struct parseTree, {currentToken.token, NULL, 1});
                     index += 1;
                 } else {
                     addParserError(
-                        format("Expected '%s' but got '%s' while parsing %s.",
-                            varOrTerminal, currentToken.token, rule.variable),
+                        format("Expected '%s' but got '%s' while parsing %s (line %d).",
+                            varOrTerminal, currentToken.token, rule.variable, currentToken.line),
                         index);
-                    // TODO: Free children before return.
                     return errorTree(rule.variable, children);
                 }
             });

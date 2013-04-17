@@ -1,8 +1,8 @@
 #include <assert.h>
 #include <stdio.h>
-#include "src/asm.h"
-#include "src/lib/parser.h"
-#include "src/lib/vector.h"
+#include "asm.h"
+#include "lib/parser.h"
+#include "lib/vector.h"
 
 struct parseTree parseAssembly(struct vector *tokens) {
     // Define a grammar for the assembly language.

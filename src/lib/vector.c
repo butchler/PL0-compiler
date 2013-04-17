@@ -1,4 +1,4 @@
-#include "src/lib/vector.h"
+#include "lib/vector.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

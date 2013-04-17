@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "src/asm.h"
-#include "src/lib/util.h"
+#include "asm.h"
+#include "lib/util.h"
 
 int main(int argc, char **argv) {
     if (argc < 2) {
@@ -32,9 +32,9 @@ int main(int argc, char **argv) {
     if (verbosity >= 3) {
         printf("Tokens:\n");
         forVector(tokens, i, struct token, token,
-                printf("%s ", token.tokenType);
-                if (strcmp(token.tokenType, "identifier-token") == 0
-                    || strcmp(token.tokenType, "number-token") == 0)
+                printf("%s ", token.type);
+                if (strcmp(token.type, "identifier-token") == 0
+                    || strcmp(token.type, "number-token") == 0)
                     printf("%s ", token.token););
         printf("\n\n");
     }

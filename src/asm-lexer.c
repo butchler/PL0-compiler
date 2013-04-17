@@ -1,5 +1,6 @@
+#line 2 "asm-lexer.c"
 
-#line 3 "lex.yy.c"
+#line 4 "asm-lexer.c"
 
 #define  YY_INT_ALIGNED short int
 
@@ -166,7 +167,20 @@ extern FILE *yyin, *yyout;
 #define EOB_ACT_END_OF_FILE 1
 #define EOB_ACT_LAST_MATCH 2
 
-    #define YY_LESS_LINENO(n)
+    /* Note: We specifically omit the test for yy_rule_can_match_eol because it requires
+     *       access to the local variable yy_act. Since yyless() is a macro, it would break
+     *       existing scanners that call yyless() from OUTSIDE yylex. 
+     *       One obvious solution it to make yy_act a global. I tried that, and saw
+     *       a 5% performance hit in a non-yylineno scanner, because yy_act is
+     *       normally declared as a register variable-- so it is not worth it.
+     */
+    #define  YY_LESS_LINENO(n) \
+            do { \
+                int yyl;\
+                for ( yyl = n; yyl < yyleng; ++yyl )\
+                    if ( yytext[yyl] == '\n' )\
+                        --yylineno;\
+            }while(0)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -360,8 +374,8 @@ static void yy_fatal_error (yyconst char msg[]  );
 	*yy_cp = '\0'; \
 	(yy_c_buf_p) = yy_cp;
 
-#define YY_NUM_RULES 5
-#define YY_END_OF_BUFFER 6
+#define YY_NUM_RULES 6
+#define YY_END_OF_BUFFER 7
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -369,12 +383,12 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static yyconst flex_int16_t yy_accept[34] =
+static yyconst flex_int16_t yy_accept[35] =
     {   0,
-        0,    0,    6,    5,    5,    3,    5,    1,    4,    4,
-        4,    3,    4,    4,    4,    0,    2,    0,    1,    4,
-        4,    4,    4,    4,    3,    4,    4,    0,    3,    3,
-        3,    3,    0
+        0,    0,    7,    6,    1,    6,    4,    6,    2,    5,
+        5,    5,    4,    5,    5,    5,    0,    3,    0,    2,
+        5,    5,    5,    5,    5,    4,    5,    5,    0,    4,
+        4,    4,    4,    0
     } ;
 
 static yyconst flex_int32_t yy_ec[256] =
@@ -416,47 +430,52 @@ static yyconst flex_int32_t yy_meta[27] =
         2,    2,    2,    2,    2,    2
     } ;
 
-static yyconst flex_int16_t yy_base[36] =
+static yyconst flex_int16_t yy_base[37] =
     {   0,
-        0,    0,   57,   58,   54,   58,   40,   45,    0,   13,
-       38,    0,    3,   30,   12,   49,   58,   31,   40,    0,
-       34,   33,   25,   29,    0,   16,   26,   17,   20,   17,
-       58,   10,   58,   42,   32
+        0,    0,   57,   58,   58,   54,   58,   40,   45,    0,
+       13,   38,    0,    3,   30,   12,   49,   58,   31,   40,
+        0,   34,   33,   25,   29,    0,   16,   26,   17,   20,
+       17,   58,   10,   58,   42,   32
     } ;
 
-static yyconst flex_int16_t yy_def[36] =
+static yyconst flex_int16_t yy_def[37] =
     {   0,
-       33,    1,   33,   33,   34,   33,   33,   33,   35,   35,
-       35,   35,   35,   35,   35,   34,   33,   33,   33,   35,
-       35,   35,   35,   35,   35,   35,   35,   33,   35,   35,
-       33,   35,    0,   33,   33
+       34,    1,   34,   34,   34,   35,   34,   34,   34,   36,
+       36,   36,   36,   36,   36,   36,   35,   34,   34,   34,
+       36,   36,   36,   36,   36,   36,   36,   36,   34,   36,
+       36,   34,   36,    0,   34,   34
     } ;
 
 static yyconst flex_int16_t yy_nxt[85] =
     {   0,
-        4,    4,    5,    6,    6,    6,    6,    7,    8,    6,
-        9,   10,   11,    9,    9,    9,   12,   13,    9,   14,
-        9,    9,   15,    9,    9,    9,   21,   24,   25,   26,
-       31,   22,   32,   20,   25,   25,   27,   25,   25,   30,
-       31,   25,   16,   16,   25,   25,   25,   29,   19,   28,
-       17,   25,   23,   19,   18,   17,   33,    3,   33,   33,
-       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
-       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
-       33,   33,   33,   33
+        4,    5,    6,    7,    7,    7,    7,    8,    9,    7,
+       10,   11,   12,   10,   10,   10,   13,   14,   10,   15,
+       10,   10,   16,   10,   10,   10,   22,   25,   26,   27,
+       32,   23,   33,   21,   26,   26,   28,   26,   26,   31,
+       32,   26,   17,   17,   26,   26,   26,   30,   20,   29,
+       18,   26,   24,   20,   19,   18,   34,    3,   34,   34,
+       34,   34,   34,   34,   34,   34,   34,   34,   34,   34,
+       34,   34,   34,   34,   34,   34,   34,   34,   34,   34,
+       34,   34,   34,   34
     } ;
 
 static yyconst flex_int16_t yy_chk[85] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    1,    1,    1,    1,    1,   10,   13,   13,   15,
-       28,   10,   30,   35,   32,   29,   15,   15,   27,   26,
-       28,   30,   34,   34,   24,   23,   22,   21,   19,   18,
-       16,   14,   11,    8,    7,    5,    3,   33,   33,   33,
-       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
-       33,   33,   33,   33,   33,   33,   33,   33,   33,   33,
-       33,   33,   33,   33
+        1,    1,    1,    1,    1,    1,   11,   14,   14,   16,
+       29,   11,   31,   36,   33,   30,   16,   16,   28,   27,
+       29,   31,   35,   35,   25,   24,   23,   22,   20,   19,
+       17,   15,   12,    9,    8,    6,    3,   34,   34,   34,
+       34,   34,   34,   34,   34,   34,   34,   34,   34,   34,
+       34,   34,   34,   34,   34,   34,   34,   34,   34,   34,
+       34,   34,   34,   34
     } ;
+
+/* Table of booleans, true if rule could match eol. */
+static yyconst flex_int32_t yy_rule_can_match_eol[7] =
+    {   0,
+1, 0, 1, 0, 0, 0,     };
 
 static yy_state_type yy_last_accepting_state;
 static char *yy_last_accepting_cpos;
@@ -475,24 +494,24 @@ char *yytext;
 #line 1 "asm.l"
 #line 2 "asm.l"
 // Code to go before the code generated by flex.
-#include "src/lib/vector.h"
-#include "src/lib/lexer.h"
-#include "src/asm.h"
+#include "lib/vector.h"
+#include "lib/lexer.h"
+#include "asm.h"
 
 struct vector *tokenVector;
 char *sourceCode;
 
-// Adds a token to the vector of tokens that readPL0Tokens returns.
-void addToken(char *type, char *token) {
+// Adds a token to the vector of tokens that readAssembly returns.
+void addToken(char *type, char *token, int line) {
     // We need to make copies of the strings because flex might later change
     // the contents of the string that yytext points to, so we want to keep the
     // current state of the string when addToken was called.
-    pushLiteral(tokenVector, struct token, {strdup(type), strdup(token)});
+    pushLiteral(tokenVector, struct token, {strdup(type), strdup(token), line});
 }
 
 #define ECHO // Stop the generated lexer code from outputing anything.
 
-// Redefine YY_INPUT to read from the string passed to readPL0Tokens().
+// Redefine YY_INPUT to read from the string passed to readAssembly().
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define YY_INPUT(buf, num_read, max_size)\
 {\
@@ -506,7 +525,7 @@ void addToken(char *type, char *token) {
     }\
 }
 /* Definitions for use in rules section below. */
-#line 510 "lex.yy.c"
+#line 529 "asm-lexer.c"
 
 #define INITIAL 0
 
@@ -688,11 +707,11 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 40 "asm.l"
+#line 43 "asm.l"
 
     /* Rules section. */
 
-#line 696 "lex.yy.c"
+#line 715 "asm-lexer.c"
 
 	if ( !(yy_init) )
 		{
@@ -745,7 +764,7 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 34 )
+				if ( yy_current_state >= 35 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -764,6 +783,16 @@ yy_find_action:
 
 		YY_DO_BEFORE_ACTION;
 
+		if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
+			{
+			int yyl;
+			for ( yyl = 0; yyl < yyleng; ++yyl )
+				if ( yytext[yyl] == '\n' )
+					   
+    yylineno++;
+;
+			}
+
 do_action:	/* This label is used only to access EOF actions. */
 
 		switch ( yy_act )
@@ -776,32 +805,38 @@ do_action:	/* This label is used only to access EOF actions. */
 			goto yy_find_action;
 
 case 1:
+/* rule 1 can match eol */
 YY_RULE_SETUP
-#line 43 "asm.l"
-addToken("number-token", yytext);
+#line 46 "asm.l"
+/* For some reason, this rule must be here to make flex update yylineno. */
 	YY_BREAK
 case 2:
-/* rule 2 can match eol */
 YY_RULE_SETUP
-#line 44 "asm.l"
-/* Ignore comments. */
+#line 47 "asm.l"
+addToken("number-token", yytext, yylineno);
 	YY_BREAK
 case 3:
+/* rule 3 can match eol */
 YY_RULE_SETUP
-#line 45 "asm.l"
-addToken(yytext, yytext); /* Tokens that don't have any special information associated with them, unlike numbers and identifiers. */
+#line 48 "asm.l"
+/* Ignore comments. */
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 46 "asm.l"
-addToken("identifier-token", yytext);
+#line 49 "asm.l"
+addToken(yytext, yytext, yylineno); /* Tokens that don't have any special information associated with them, unlike numbers and identifiers. */
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 48 "asm.l"
+#line 50 "asm.l"
+addToken("identifier-token", yytext, yylineno);
+	YY_BREAK
+case 6:
+YY_RULE_SETUP
+#line 52 "asm.l"
 ECHO;
 	YY_BREAK
-#line 805 "lex.yy.c"
+#line 840 "asm-lexer.c"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1093,7 +1128,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 34 )
+			if ( yy_current_state >= 35 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
@@ -1121,11 +1156,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 34 )
+		if ( yy_current_state >= 35 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
-	yy_is_jam = (yy_current_state == 33);
+	yy_is_jam = (yy_current_state == 34);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -1161,6 +1196,10 @@ static int yy_get_next_buffer (void)
 		}
 
 	*--yy_cp = (char) c;
+
+    if ( c == '\n' ){
+        --yylineno;
+    }
 
 	(yytext_ptr) = yy_bp;
 	(yy_hold_char) = *yy_cp;
@@ -1236,6 +1275,11 @@ static int yy_get_next_buffer (void)
 	c = *(unsigned char *) (yy_c_buf_p);	/* cast for 8-bit char's */
 	*(yy_c_buf_p) = '\0';	/* preserve yytext */
 	(yy_hold_char) = *++(yy_c_buf_p);
+
+	if ( c == '\n' )
+		   
+    yylineno++;
+;
 
 	return c;
 }
@@ -1703,6 +1747,9 @@ static int yy_init_globals (void)
      * This function is called from yylex_destroy(), so don't allocate here.
      */
 
+    /* We do not touch yylineno unless the option is enabled. */
+    yylineno =  1;
+    
     (yy_buffer_stack) = 0;
     (yy_buffer_stack_top) = 0;
     (yy_buffer_stack_max) = 0;
@@ -1795,7 +1842,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 48 "asm.l"
+#line 52 "asm.l"
 
 
 // Code to go after the code generated by flex.

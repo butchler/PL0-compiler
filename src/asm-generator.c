@@ -3,9 +3,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "src/asm.h"
-#include "src/lib/vector.h"
-#include "src/lib/util.h"
+#include "asm.h"
+#include "lib/vector.h"
+#include "lib/util.h"
 
 #define PROGRAM_START_ADDRESS 0x4000
 

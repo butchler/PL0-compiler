@@ -1,8 +1,8 @@
 #ifndef ASM_H
 #define ASM_H
 
-#include "src/lib/vector.h"
-#include "src/lib/parser.h"
+#include "lib/vector.h"
+#include "lib/parser.h"
 
 // readAssembly is defined in asm-lexer.c, which is generated from asm.l by flex.
 struct vector *readAssembly(char *sourceCode);

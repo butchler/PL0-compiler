@@ -1,18 +1,22 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
+// Vectors
+// =======
 // A vector is an array that automatically expands as you add items to it. Use
 // the functions/macros below to operate on vectors.
 //
 // Most of the functions and macros are fairly self explanatory, except for
 // push/set.  Because vectors can hold types of arbitrary sizes, you have to
-// pass a pointer to push/set. Because of this, you can't pass literal values
-// to them, so you can't do something like:
+// pass a pointer to push/set. So, you can't pass a literal value to push/set,
+// because you can't take the address of a literal (i.e. doing &1 or &"string"
+// won't compile). Therefore, this won't compile:
 //
 // struct vector *vector = makeVector(int);
 // push(vector, 100);
 //
-// Instead, you have to do something like this:
+// because it expands to vector_push(vector, &100). Instead, you have to do
+// something like this:
 //
 // int x = 100;
 // push(vector, x);
@@ -22,8 +26,8 @@
 //
 // pushLiteral(vector, int, 100);
 //
-// More examples
-// -------------
+// Examples
+// --------
 //
 // struct vector *stuff = makeVector(char*);
 // pushLiteral(stuff, char*, "a");              // stuff = {"a"}
@@ -40,8 +44,8 @@
 // 
 // Outputs:
 // stuff[0] = a
-// stuff[1] = a
-// stuff[2] = b
+// stuff[1] = b
+// stuff[2] = a
 
 struct vector
 {
@@ -56,22 +60,31 @@ struct vector
 // Number of spaces to add when capacity is exceeded.
 #define CAPACITY_STEP 20
 
+// Macros
+// ======
 // Use these macros in preference to the functions below so that you don't have
 // to reference/dereference anything when using vector_get and
 // vector_set/vector_push. They also have slightly nicer names, and let you
 // pass a type to makeVector, instead of passing an int to vector_init.
+
 #define makeVector(type) vector_init(sizeof (type))
+
 #define push(vector, item) vector_push(vector, (void*)(&item))
+
 // pushLiteral puts the local variable "literal" in it's own scope so that it
 // can't conflict with any other variables.
 //#define pushLiteral(vector, type, value) { type literal = value; push(vector, literal); }
-// Need to use variable length arguments to pass the value to pushLiteral,
-// because the value could be a struct literal, and have commands in it. For
-// example: pushLiteral(vector, struct something, {"string", NULL}).
+// Need to use variable arguments to pass the value to pushLiteral, because the
+// value could be a struct literal, and have commands in it. For example:
+// pushLiteral(vector, struct something, {"string", NULL}).
 #define pushLiteral(vector, type, ...) { type literal = __VA_ARGS__; push(vector, literal); }
+
 #define set(vector, index, item) vector_set(vector, index, (void*)(&item))
+
 #define get(type, vector, index) (*(type*)vector_get(vector, index))
+
 #define freeVector(vector) vector_free(vector)
+
 // Executes the given code for each item in the vector, using the given
 // variable names to hold the current index and current item's value.
 #define forVector(vector, indexVariable, type, itemVariable, ...)\
@@ -82,6 +95,7 @@ if (vector != NULL) {\
         __VA_ARGS__\
     }\
 }
+
 // Does the same thing as forVector, but sets itemVariable to be a pointer to
 // the value stored in the vector, instead of the dereferenced value. Useful if
 // you have a vector of structs and want to modify each struct as you iterate
@@ -95,6 +109,8 @@ if (vector != NULL) {\
     }\
 }
 
+// Functions
+// =========
 struct vector* vector_init(int itemSize);
 struct vector* vector_copy(struct vector *vector);
 void vector_push(struct vector *vector, void *item);
@@ -106,16 +122,5 @@ void vector_free(struct vector *vector);
 
 // Experimental:
 int vector_find(struct vector *vector, void *value);
-#define pushLiterals(vector, type, ...) {\
-    type items[] = {\
-        __VA_ARGS__\
-    };\
-\
-    int length = sizeof (items) / sizeof (type);\
-    int i;\
-    for (i = 0; i < length; i++) {\
-        push(vector, items[i]);\
-    }\
-}
 
 #endif
