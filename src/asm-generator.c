@@ -7,6 +7,8 @@
 #include "src/lib/vector.h"
 #include "src/lib/util.h"
 
+#define PROGRAM_START_ADDRESS 0x4000
+
 struct label {
     char *name;
     int address;
@@ -72,8 +74,10 @@ void findLabels(struct parseTree tree, struct generatorState *state) {
         state->currentAddress += 1;
     } else if (strcmp(ruleType, "@label") == 0) {
         char *labelName = getIdentifier(getChild(tree, "@identifier"));
-        if (labelName != NULL)
-            pushLiteral(state->labels, struct label, {labelName, state->currentAddress});
+        if (labelName != NULL) {
+            int address = PROGRAM_START_ADDRESS + state->currentAddress;
+            pushLiteral(state->labels, struct label, {labelName, address});
+        }
     }
 
     forVector(tree.children, i, struct parseTree, child,
