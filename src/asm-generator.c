@@ -50,7 +50,7 @@ int getFunction(char *instructionName);
 
 char *assemble(struct parseTree tree) {
     struct generatorState state;
-    state.currentAddress = 0;
+    state.currentAddress = PROGRAM_START_ADDRESS;
     state.labels = makeVector(struct label);
 
     findLabels(tree, &state);
@@ -58,7 +58,7 @@ char *assemble(struct parseTree tree) {
     /*forVector(state.labels, i, struct label, label,
             printf("label: name = %s, address = %d\n", label.name, label.address););*/
 
-    state.currentAddress = 0;
+    state.currentAddress = PROGRAM_START_ADDRESS;
     state.instructions = makeVector(char*);
     generateAssembly(tree, &state);
 
@@ -71,12 +71,12 @@ void findLabels(struct parseTree tree, struct generatorState *state) {
     assert(ruleType != NULL);
 
     if (strcmp(ruleType, "@instruction") == 0) {
-        state->currentAddress += 1;
+        state->currentAddress += 4;
     } else if (strcmp(ruleType, "@label") == 0) {
         char *labelName = getIdentifier(getChild(tree, "@identifier"));
         if (labelName != NULL) {
-            int address = PROGRAM_START_ADDRESS + state->currentAddress;
-            pushLiteral(state->labels, struct label, {labelName, address});
+            struct label label = {labelName, state->currentAddress};
+            push(state->labels, label);
         }
     }
 
@@ -153,7 +153,7 @@ struct vector *generateAssembly(struct parseTree tree, struct generatorState *st
             exit(1);
         }
 
-        state->currentAddress += 1;
+        state->currentAddress += 4;
     } else {
         forVector(tree.children, i, struct parseTree, child,
                 generateAssembly(child, state););
@@ -207,8 +207,8 @@ void addBranchInstruction(struct generatorState *state, char *instructionName,
         int r1, int r2, char *labelName) {
     struct label label = getLabel(state, labelName);
     assert(label.name != NULL);
-    int nextInstruction = state->currentAddress + 1;
-    int offset = label.address - nextInstruction;
+    int nextInstruction = state->currentAddress + 4;
+    int offset = (label.address - nextInstruction) >> 2;
 
     addImmediateInstruction(state, instructionName, r2, r1, offset);
 }
@@ -220,7 +220,7 @@ void addJumpInstruction(struct generatorState *state, char *instructionName,
     // text format: instruction target
     // binary format: opcode | target
     int opcode = getOpcode(instructionName) << 26;
-    int target = label.address;
+    int target = label.address >> 2;
     checkSize(target, 26);
     uint32_t instruction = opcode | target;
 
