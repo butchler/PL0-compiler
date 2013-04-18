@@ -15,3 +15,4 @@ label: addi $8, $8, 2929
 sub $8, $8, $3
 end: beq $10, $11, label  
 .end main
+addi $8, $8, -100

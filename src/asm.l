@@ -44,7 +44,7 @@ comment #[^\n]*\n
     /* Rules section. */
 
 \n              /* For some reason, this rule must be here to make flex update yylineno. */
-{digit}+        addToken("number-token", yytext, yylineno);
+[-]?{digit}+        addToken("number-token", yytext, yylineno);
 {comment}       /* Ignore comments. */
 ".ent"|".end"|add|sub|addi|and|or|lw|sw|lui|beq|slt|slti|sltu|sltiu|j|,|:|"$"|"("|")" addToken(yytext, yytext, yylineno); /* Tokens that don't have any special information associated with them, unlike numbers and identifiers. */
 {identifier}    addToken("identifier-token", yytext, yylineno);
